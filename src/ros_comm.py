@@ -95,8 +95,7 @@ class SimWorld(object):
 		grid_msg.info.height = height
 
 		# Rotated maps are not supported... 
-		grid_msg.info.origin = Pose(Point(origin_x, origin_y, 0),
-				               Quaternion(0, 0, 0, 1))
+		grid_msg.info.origin = Pose(Point(origin_x, origin_y, 0), Quaternion(0, 0, 0, 1))
 
 		# Flatten the numpy array into a list of integers from 0-100.
 		# This assumes that the grid entries are probalities in the range 0-1
@@ -141,8 +140,8 @@ class SimWorld(object):
 		else:
 			marker.color.b = 1.0
 
-		marker.pose.position.x = xy[0]
-		marker.pose.position.y = xy[1]
+		marker.pose.position.x = xy[1]
+		marker.pose.position.y = xy[0]
 
 		return marker
 

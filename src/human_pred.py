@@ -26,10 +26,10 @@ class HumanPredMap(object):
 
 	def __init__(self, height, width):
 		# rationality coefficient in P(u_H | x, u_R; theta) = e^{1/beta*Q(x,u_R,u_H,theta)}
-		self.beta = 1
+		self.beta = 0.5
 
 		# grid world representing the experimental environment
-		self.gridworld = GridWorldMDP(height, width, {}, default_reward=-1)
+		self.gridworld = GridWorldMDP(height, width, {}, default_reward=-4)
 
 		# tracks the human's state over time
 		self.human_traj = None
@@ -41,8 +41,9 @@ class HumanPredMap(object):
 		self.moving_obstacle = None
 	
 		# list of known goals where the human might want to go
-		self.goal_pos = [height-1, width-1]
-		self.goal = self.gridworld.coor_to_state(height-1, width-1)
+		# x = row, y = column
+		self.goal_pos = [height-1, width-1] #width//2]				
+		self.goal = self.gridworld.coor_to_state(height-1, width-1)#width-1)
 
 		# number of timesteps
 		self.T = 12
@@ -69,16 +70,17 @@ class HumanPredMap(object):
 
 		# approximate the current timestep
 		currT = int(np.round(time))
-		print "	--> currT: ", currT
+		#print "	--> currT: ", currT
 
-		#print "human traj latest: " + str(self.human_traj[-1])
-		init_state = self.gridworld.coor_to_state(self.human_traj[0][0], self.human_traj[0][1])
+		print "human traj latest: " + str(self.human_traj[-1])
+		init_state = self.gridworld.coor_to_state(int(self.human_traj[-1][0]*10), int(self.human_traj[-1][1]*10))
+		print "init state: ", init_state
 
-		# A numpy.ndarray with dimensions (T x g.rows x g.cols).
-		# `state_prob[t]` holds the exact state probabilities for
+		# A numpy.ndarray with dimensions (g.rows x g.cols).
+		# `state_prob` holds the exact state probabilities for
 		# a beta-irrational, softmax-action-choice-over-hardmax-values agent.
-		state_prob = inf.state.infer_from_start(self.gridworld, init_state, self.goal,
-					T=currT, beta=self.beta, all_steps=False).reshape(self.gridworld.rows, self.gridworld.cols) #.reshape(self.T+1, self.gridworld.rows, self.gridworld.cols)
+		result_grid = inf.state.infer_from_start(self.gridworld, init_state, self.goal, T=1, beta=self.beta, all_steps=False) 
+		state_prob = result_grid.reshape(self.gridworld.rows, self.gridworld.cols)
 
 		self.occupancy_grid = state_prob
 		#print "occu grid:", self.occupancy_grid
