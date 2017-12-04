@@ -5,6 +5,7 @@ from std_msgs.msg import String
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, Pose2D
 from visualization_msgs.msg import Marker
+from human_msgs import OccupancyGridTime, ProbabilityGrid
 import os
 import numpy as np
 import time
@@ -29,7 +30,7 @@ class SimWorld(object):
 		rospy.init_node('sim_world', anonymous=True)
 
 		# occupancy grid publisher
-		self.occupancy_pub = rospy.Publisher('/occupancy_grid', OccupancyGrid, queue_size=10)
+		self.occupancy_pub = rospy.Publisher('/occupancy_grid_time', OccupancyGridTime, queue_size=1)
 
 		# small publishers for visualizing the start/goal
 		self.goal_pub = rospy.Publisher('/goal_marker', Marker, queue_size=10)
@@ -76,34 +77,34 @@ class SimWorld(object):
 
 	def grid_to_message(self):
 		"""
-		Converts occupancy grid structure to ROS msg
+		Converts OccupancyGridTime structure to ROS msg
 		"""
-		origin_x=0.0 
-		origin_y=0.0 
-		resolution=0.1
-		(width, height) = np.shape(self.human_map.occupancy_grid)
+    timed_grid = OccupancyGridTime()
+    timed_grid.gridarray = [None]*self.human_map.fwd_pred_tsteps
 
-		grid_msg = OccupancyGrid()
+    for t in range(self.human_map.fwd_pred_tsteps):
+      grid_msg = ProbabilityGrid()
 
-		# Set up the header.
-		grid_msg.header.stamp = rospy.Time.now()
-		grid_msg.header.frame_id = "map"
+		  # Set up the header.
+		  grid_msg.header.stamp = rospy.Time.now()
+		  grid_msg.header.frame_id = "map"
 
-		# .info is a nav_msgs/MapMetaData message. 
-		grid_msg.info.resolution = resolution
-		grid_msg.info.width = width
-		grid_msg.info.height = height
+		  # .info is a nav_msgs/MapMetaData message. 
+		  grid_msg.resolution = 0.1
+		  grid_msg.width = self.human_map.width
+		  grid_msg.height = self.human_map.height
 
-		# Rotated maps are not supported... 
-		grid_msg.info.origin = Pose(Point(origin_x, origin_y, 0), Quaternion(0, 0, 0, 1))
+		  # Rotated maps are not supported... 
+		  origin_x=0.0 
+		  origin_y=0.0 
+		  grid_msg.origin = Pose(Point(origin_x, origin_y, 0), Quaternion(0, 0, 0, 1))
 
-		# Flatten the numpy array into a list of integers from 0-100.
-		# This assumes that the grid entries are probalities in the range 0-1
-		flat_grid = self.human_map.occupancy_grid.reshape((self.human_map.occupancy_grid.size,)) * 100
-		#print "flat_grid: " + str(flat_grid)
-		grid_msg.data = list(np.round(flat_grid))
-		#print list(np.round(flat_grid))
-		return grid_msg
+		  # Flatten the numpy array into a list of doubles from 0-1
+		  grid_msg.data = list(self.human_map.occupancy_grids[t].reshape((self.human_map.occupancy_grids[t].size,)))
+
+      timed_grid.gridarray[t] = grid_msg
+ 
+		return timed_grid
 
 	def human_state_callback(self, msg):
 		"""
@@ -116,7 +117,7 @@ class SimWorld(object):
 		self.human_map.update_human_traj(self.human_state)
 		
 		# infer the new human occupancy map at the current timestamp
-		self.human_map.infer_occupancies(msg.header.stamp.secs) #time.time() - self.startT)#self.tstep)
+		self.human_map.infer_occupancies(msg.header.stamp.secs) 
 
 	def state_to_marker(self, xy=[0,0], color="R"):
 		"""

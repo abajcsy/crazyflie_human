@@ -13,6 +13,8 @@ from pedestrian_prediction.pp.mdp import GridWorldMDP
 from pedestrian_prediction.pp.inference import hardmax as inf
 from pedestrian_prediction.pp.plot import plot_heat_maps
 
+from human_msgs import OccupancyGridTime, ProbabilityGrid
+
 A = GridWorldMDP.Actions
 
 class HumanPredMap(object):
@@ -25,6 +27,10 @@ class HumanPredMap(object):
 	"""
 
 	def __init__(self, height, width):
+    self.height = height
+    self.width = width
+    self.resolution = 10
+
 		# rationality coefficient in P(u_H | x, u_R; theta) = e^{1/beta*Q(x,u_R,u_H,theta)}
 		self.beta = 0.5
 
@@ -34,8 +40,12 @@ class HumanPredMap(object):
 		# tracks the human's state over time
 		self.human_traj = None
 
-		# stores occupancy grid, with probability of human at a certain state
-		self.occupancy_grid = np.zeros((height,width))
+    # number of steps that we do forward prediction for
+    self.fwd_pred_tsteps = 3
+
+		# stores occupancy grid list, with probability of human at a certain state
+    # at each time in the future
+		self.occupancy_grids = np.zeros((self.fwd_pred_tsteps,height,width))
 
 		# stores 4D obstacle computed from the occupancy grid
 		self.moving_obstacle = None
@@ -45,8 +55,6 @@ class HumanPredMap(object):
 		self.goal_pos = [height-1, width-1] #width//2]				
 		self.goal = self.gridworld.coor_to_state(height-1, width-1)#width-1)
 
-		# number of timesteps
-		self.T = 12
 
 	def update_human_traj(self, newstate):
 		"""
@@ -73,17 +81,21 @@ class HumanPredMap(object):
 		#print "	--> currT: ", currT
 
 		print "human traj latest: " + str(self.human_traj[-1])
-		init_state = self.gridworld.coor_to_state(int(self.human_traj[-1][0]*10), int(self.human_traj[-1][1]*10))
+		init_state = self.gridworld.coor_to_state(
+                      int(self.human_traj[-1][0]*self.resolution), 
+                      int(self.human_traj[-1][1]*self.resolution))
 		print "init state: ", init_state
 
-		# A numpy.ndarray with dimensions (g.rows x g.cols).
-		# `state_prob` holds the exact state probabilities for
-		# a beta-irrational, softmax-action-choice-over-hardmax-values agent.
-		result_grid = inf.state.infer_from_start(self.gridworld, init_state, self.goal, T=1, beta=self.beta, all_steps=False) 
-		state_prob = result_grid.reshape(self.gridworld.rows, self.gridworld.cols)
+    for t in range(1,self.fwd_pred_tsteps):
+		  # A numpy.ndarray with dimensions (g.rows x g.cols).
+		  # `state_prob` holds the exact state probabilities for
+		  # a beta-irrational, softmax-action-choice-over-hardmax-values agent.
+		  result_grid = inf.state.infer_from_start(self.gridworld, init_state, self.goal, T=t, beta=self.beta, all_steps=False) 
+		  state_prob = result_grid.reshape(self.gridworld.rows, self.gridworld.cols)
 
-		self.occupancy_grid = state_prob
-		#print "occu grid:", self.occupancy_grid
+
+      # TODO i need to update the beta after the inference...?
+		  self.occupancy_grids[t-1] = state_prob
 
 if __name__ == '__main__':
 	human_map = HumanPredMap(10, 10)

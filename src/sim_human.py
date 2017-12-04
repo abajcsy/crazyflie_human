@@ -17,6 +17,7 @@ class SimHuman(object):
 	def __init__(self, height, width):
 		self.height = height		
 		self.width = width
+    self.resolution = 10.0
 
 		self.start = np.array([0,0])
 		self.goal = np.array([height-1,width-1])
@@ -88,9 +89,9 @@ class SimHuman(object):
 		self.human_pose.header.frame_id="/frame_id_1"
 		self.human_pose.header.stamp = rospy.Time.now()
 		# set the current timestamp
-		self.human_pose.header.stamp.secs = curr_time
-		self.human_pose.pose.position.x = target_pos[0]/10.0
-		self.human_pose.pose.position.y = target_pos[1]/10.0
+		# self.human_pose.header.stamp.secs = curr_time
+		self.human_pose.pose.position.x = target_pos[0]/self.resolution
+		self.human_pose.pose.position.y = target_pos[1]/self.resolution
 		self.human_pose.pose.position.z = 0.0
 
 if __name__ == '__main__':
