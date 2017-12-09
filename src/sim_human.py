@@ -14,60 +14,73 @@ class SimHuman(object):
 	Publishes the human's (x,y,theta) data to ROS topic /human_pose
 	"""
 
-	def __init__(self, height, width):
-		self.height = height		
-		self.width = width
-    self.resolution = 10.0
+	def __init__(self):
 
-		self.start = np.array([0,0])
-		self.goal = np.array([height-1,width-1])
+		rospy.init_node('sim_human', anonymous=True)
 
-		self.final_T = 12.0
+		# load all the prediction params and setup subscriber/publishers
+		self.load_parameters()
+		self.register_callbacks()
 
+		rate = rospy.Rate(100) # 40hz
+
+		while not rospy.is_shutdown():
+			t = rospy.Time.now().secs - self.start_T
+			self.update_pose(t)
+			self.state_pub.publish(self.human_pose)
+			self.marker_pub.publish(self.pose_to_marker())
+			rate.sleep()
+
+	def load_parameters(self):
+		"""
+		Loads all the important paramters of the human sim
+		"""
+		low = rospy.get_param("state/lower")
+		up = rospy.get_param("state/upper")
+		self.height = up[1] - low[1] 
+		self.width = up[0] - low[0]
+		self.res = rospy.get_param("pred/resolution")
+		self.human_height = rospy.get_param("pred/human_height")
+		self.start = rospy.get_param("pred/start")
+		self.goals = rospy.get_param("pred/goals")
+		# TODO this only works for one goal right now!
+		self.goal = self.goals[0]
+		self.start_T = rospy.Time.now().secs
+		self.final_T = 20.0
 		self.human_pose = None
 
-		try:
-			state_pub = rospy.Publisher('human_pose', PoseStamped, queue_size=10)
-			marker_pub = rospy.Publisher('human_marker', Marker, queue_size=10)
-
-			rospy.init_node('sim_human', anonymous=True)
-
-			rate = rospy.Rate(100) # 40hz
-
-			self.start_T = time.time()
-			while not rospy.is_shutdown():
-				t = time.time() - self.start_T
-				self.update_pose(t)
-				state_pub.publish(self.human_pose)
-				marker_pub.publish(self.pose_to_marker())
-				rate.sleep()
-
-		except rospy.ROSInterruptException:
-			pass
+	def register_callbacks(self):
+		"""
+		Sets up all the publishers/subscribers needed.
+		"""
+		self.state_pub = rospy.Publisher('/human_pose', PoseStamped, queue_size=10)
+		self.marker_pub = rospy.Publisher('/human_marker', Marker, queue_size=10)
 
 	def pose_to_marker(self):
 		"""
 		Converts pose to marker type to vizualize human
 		"""
 		marker = Marker()
-		marker.header.frame_id = "/root"
+		marker.header.frame_id = "/world"
 
 		marker.type = marker.CUBE
 		marker.action = marker.ADD
 		marker.pose.orientation.w = 1
 		marker.pose.position.z = 0.2
-		marker.scale.x = 0.1
-		marker.scale.y = 0.1
-		marker.scale.z = 0.4
+		marker.scale.x = self.res
+		marker.scale.y = self.res
+		marker.scale.z = self.res*self.human_height
 		marker.color.a = 1.0
 		marker.color.r = 1.0
 
 		if self.human_pose is not None:
 			marker.pose.position.x = self.human_pose.pose.position.x 
 			marker.pose.position.y = self.human_pose.pose.position.y
+			marker.pose.position.z = self.res*2
 		else:
 			marker.pose.position.x = 0
 			marker.pose.position.y = 0
+			marker.pose.position.z = 0
 
 		return marker
 
@@ -77,10 +90,10 @@ class SimHuman(object):
 		by interpolating between waypoints given the current t.
 		"""
 		if curr_time >= self.final_T:
-			target_pos = self.goal
+			target_pos = np.array(self.goal)
 		else:
-			prev = self.start
-			next = self.goal
+			prev = np.array(self.start)
+			next = np.array(self.goal)
 			ti = 0
 			tf = self.final_T
 			target_pos = (next - prev)*((curr_time-ti)/(tf - ti)) + prev		
@@ -90,15 +103,10 @@ class SimHuman(object):
 		self.human_pose.header.stamp = rospy.Time.now()
 		# set the current timestamp
 		# self.human_pose.header.stamp.secs = curr_time
-		self.human_pose.pose.position.x = target_pos[0]/self.resolution
-		self.human_pose.pose.position.y = target_pos[1]/self.resolution
+		self.human_pose.pose.position.x = target_pos[0]/self.res
+		self.human_pose.pose.position.y = target_pos[1]/self.res
 		self.human_pose.pose.position.z = 0.0
 
 if __name__ == '__main__':
-	if len(sys.argv) < 3:
-		print "ERROR: Not enough arguments. Specify height, width of world"
-	else:	
-		height = int(sys.argv[1])
-		width = int(sys.argv[2])
 
-		human = SimHuman(height, width)
+	human = SimHuman()

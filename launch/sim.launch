@@ -1,15 +1,13 @@
 <?xml version="1.0"?>
 
 <launch>
-	<arg name="height" default="10"/>
-	<arg name="width" default="10"/>
-	<arg name="final_time" default="12.0"/>
+	<rosparam command="load" file="$(find crazyflie_human)/config/pedestrian_pred.yaml" />
 
 	<!-- simulate human walking around -->
-	<node name="simulate_human" pkg="crazyflie_human" type="sim_human.py" args="$(arg height) $(arg width)" output="screen"/>
+	<node name="simulate_human" pkg="crazyflie_human" type="sim_human.py" output="screen"/>
 	
 	<!-- simulate world -->
-	<node name="simulate_world" pkg="crazyflie_human" type="ros_comm.py" args="$(arg height) $(arg width)" output="screen"/> -->
+	<node name="simulate_world" pkg="crazyflie_human" type="ros_comm.py" output="screen"/> -->
 
 	<!-- Start RVIZ 
 	<node pkg="rviz" type="rviz" name="rviz"/>--> 

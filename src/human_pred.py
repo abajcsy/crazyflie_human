@@ -13,7 +13,7 @@ from pedestrian_prediction.pp.mdp import GridWorldMDP
 from pedestrian_prediction.pp.inference import hardmax as inf
 from pedestrian_prediction.pp.plot import plot_heat_maps
 
-from human_msgs import OccupancyGridTime, ProbabilityGrid
+from crazyflie_human.msg import OccupancyGridTime, ProbabilityGrid
 
 A = GridWorldMDP.Actions
 
@@ -26,36 +26,38 @@ class HumanPredMap(object):
 		- moving obstacle representing human future motion
 	"""
 
-	def __init__(self, height, width):
-    self.height = height
-    self.width = width
-    self.resolution = 10
+	def __init__(self, height, width, res, fwd_tsteps, fwd_deltat, goals, init_beta):
 
-		# rationality coefficient in P(u_H | x, u_R; theta) = e^{1/beta*Q(x,u_R,u_H,theta)}
-		self.beta = 0.5
+		self.height = height
+		self.width = width
+		self.resolution = res
 
 		# grid world representing the experimental environment
-		self.gridworld = GridWorldMDP(height, width, {}, default_reward=-4)
+		self.gridworld = GridWorldMDP(int(self.height), int(self.width), {}, default_reward=-4)
+
+		# number of steps that we do forward prediction for
+		self.fwd_tsteps = fwd_tsteps
+
+		# forward timestep for prediction
+		self.delta_t = fwd_deltat
+
+		# TODO we need to have a goal set
+		# list of known goals where the human might want to go, x = row, y = column
+		self.goals = goals
+
+		# TODO THIS IS TEMPORARY, FOR TESTING JUST DO 1 GOAL
+		self.goal_pos = self.real_to_sim_coord(self.goals[0])
+		self.goal = int(self.gridworld.coor_to_state(self.goal_pos[0],self.goal_pos[1]))
+
+		# rationality coefficient in P(u_H | x, u_R; theta) = e^{1/beta*Q(x,u_R,u_H,theta)}
+		self.beta = init_beta
 
 		# tracks the human's state over time
 		self.human_traj = None
 
-    # number of steps that we do forward prediction for
-    self.fwd_pred_tsteps = 3
-
-		# stores occupancy grid list, with probability of human at a certain state
-    # at each time in the future
-		self.occupancy_grids = np.zeros((self.fwd_pred_tsteps,height,width))
-
-		# stores 4D obstacle computed from the occupancy grid
-		self.moving_obstacle = None
+		# stores 2D array of size (fwd_tsteps) x (height x width) of probabilities
+		self.occupancy_grids = None
 	
-		# list of known goals where the human might want to go
-		# x = row, y = column
-		self.goal_pos = [height-1, width-1] #width//2]				
-		self.goal = self.gridworld.coor_to_state(height-1, width-1)#width-1)
-
-
 	def update_human_traj(self, newstate):
 		"""
 		Given a new sensor measurement of where the human is, update the tracked
@@ -65,9 +67,9 @@ class HumanPredMap(object):
 			self.human_traj = np.array([newstate])
 		else:
 			self.human_traj = np.append(self.human_traj, np.array([newstate]), 0)
-			#print "human_traj: ", self.human_traj
 
-	def infer_occupancies(self, time):
+	# TODO we need to have beta updated over time, and have a beta for each goal
+	def infer_occupancies(self):
 		"""
 		Using the current trajectory data, recompute a new occupancy grid
 		for where the human might be
@@ -76,26 +78,40 @@ class HumanPredMap(object):
 			print "Can't infer occupancies -- human hasn't appeared yet!"
 			return 
 
-		# approximate the current timestep
-		currT = int(np.round(time))
-		#print "	--> currT: ", currT
+		# TODO update beta here
 
-		print "human traj latest: " + str(self.human_traj[-1])
-		init_state = self.gridworld.coor_to_state(
-                      int(self.human_traj[-1][0]*self.resolution), 
-                      int(self.human_traj[-1][1]*self.resolution))
-		print "init state: ", init_state
+		corrected = self.real_to_sim_coord(self.human_traj[-1])
+		print "(real) human traj latest: " + str(self.human_traj[-1])
+		print "(sim) corrected human traj: ", corrected
 
-    for t in range(1,self.fwd_pred_tsteps):
-		  # A numpy.ndarray with dimensions (g.rows x g.cols).
-		  # `state_prob` holds the exact state probabilities for
-		  # a beta-irrational, softmax-action-choice-over-hardmax-values agent.
-		  result_grid = inf.state.infer_from_start(self.gridworld, init_state, self.goal, T=t, beta=self.beta, all_steps=False) 
-		  state_prob = result_grid.reshape(self.gridworld.rows, self.gridworld.cols)
+		init_state = self.gridworld.coor_to_state(int(corrected[0]), int(corrected[1]))
 
+		# returns all state probabilities for
+		# timesteps 0,1,...,T in a 2D array. (with dimension (T+1) x (height x width)
+		self.occupancy_grids = inf.state.infer_from_start(self.gridworld, init_state, self.goal, T=self.fwd_tsteps, beta=self.beta, all_steps=True)
 
-      # TODO i need to update the beta after the inference...?
-		  self.occupancy_grids[t-1] = state_prob
+		#print self.occupancy_grids	
+
+	def interpolate_grid(self, tstep_future):
+		"""
+		Interpolates the grid at the current time
+		"""
+		if self.occupancy_grids is None:
+			print "Occupancy grids are not created yet!"
+			return None
+
+		if tstep_future < 0:
+			print "Can't interpolate for negative time!"
+			return None
+
+		return self.occupancy_grids[int(tstep_future)]
+		
+	def real_to_sim_coord(self, real_coord):
+		"""
+		Takes [x,y] coordinate in the ROS real frame, and returns a shifted
+		value in the simulation frame
+		"""
+		return [int(real_coord[0]+self.width/2), int(real_coord[1]+self.height/2)]
 
 if __name__ == '__main__':
 	human_map = HumanPredMap(10, 10)

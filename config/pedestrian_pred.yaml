@@ -1,0 +1,31 @@
+state:
+
+  # Upper and lower bounds for state space.
+  # In the quadrotor 6D model, state is [x, y, z, vx, vy, vz].
+  upper: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+  lower: [-10.0, -10.0, 0.0, -10.0, -10.0, -10.0]
+
+pred:
+  # Number of timesteps into the future to predict
+  fwd_tsteps: 4
+
+  # Time between each step (in seconds?)
+  fwd_deltat: 1
+
+  # Start position of human
+  start: [-9, -9]
+
+  # List of goal locations that the human can be moving to
+  goals: [[-9, 9]]
+
+  # Initial rationality coefficient 
+  init_beta: 0.5
+
+  # Resolution (m/cell)
+  resolution: 1
+
+  # Human's height
+  human_height: 5
+
+  # Probability threshold
+  prob_thresh: 0.3
