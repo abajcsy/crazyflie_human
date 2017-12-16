@@ -22,7 +22,7 @@ class SimHuman(object):
 		self.load_parameters()
 		self.register_callbacks()
 
-		rate = rospy.Rate(100) # 40hz
+		rate = rospy.Rate(100)
 
 		while not rospy.is_shutdown():
 			t = rospy.Time.now().secs - self.start_T
@@ -35,16 +35,30 @@ class SimHuman(object):
 		"""
 		Loads all the important paramters of the human sim
 		"""
+		# --- simulation params ---# 
+
+		# start and goal locations 
+		self.sim_start = rospy.get_param("pred/sim_start")
+		self.sim_goals = rospy.get_param("pred/sim_goals")
+
+		# resolution (m/cell)
+		self.res = rospy.get_param("pred/resolution")
+
+		self.human_height = rospy.get_param("pred/human_height")
+
+		# --- real-world params ---# 
+
 		low = rospy.get_param("state/lower")
 		up = rospy.get_param("state/upper")
-		self.height = up[1] - low[1] 
-		self.width = up[0] - low[0]
-		self.res = rospy.get_param("pred/resolution")
-		self.human_height = rospy.get_param("pred/human_height")
-		self.start = rospy.get_param("pred/start")
-		self.goals = rospy.get_param("pred/goals")
-		# TODO this only works for one goal right now!
-		self.goal = self.goals[0]
+
+		# get real-world measurements of experimental space
+		self.real_height = up[1] - low[1] 
+		self.real_width = up[0] - low[0] 
+
+		# start and goal locations 
+		self.real_start = self.sim_to_real_coord(self.sim_start)
+		self.real_goal = self.sim_to_real_coord(self.sim_goals[0]) # TODO THIS ONLY WORKS FOR 1 GOAL
+
 		self.start_T = rospy.Time.now().secs
 		self.final_T = 20.0
 		self.human_pose = None
@@ -66,21 +80,21 @@ class SimHuman(object):
 		marker.type = marker.CUBE
 		marker.action = marker.ADD
 		marker.pose.orientation.w = 1
-		marker.pose.position.z = 0.2
-		marker.scale.x = self.res
-		marker.scale.y = self.res
-		marker.scale.z = self.res*self.human_height
+		marker.pose.position.z = 0.1
+		marker.scale.x = 1
+		marker.scale.y = 1
+		marker.scale.z = self.human_height
 		marker.color.a = 1.0
 		marker.color.r = 1.0
 
 		if self.human_pose is not None:
 			marker.pose.position.x = self.human_pose.pose.position.x 
 			marker.pose.position.y = self.human_pose.pose.position.y
-			marker.pose.position.z = self.res*2
+			marker.pose.position.z = 2
 		else:
 			marker.pose.position.x = 0
 			marker.pose.position.y = 0
-			marker.pose.position.z = 0
+			marker.pose.position.z = 2
 
 		return marker
 
@@ -90,22 +104,38 @@ class SimHuman(object):
 		by interpolating between waypoints given the current t.
 		"""
 		if curr_time >= self.final_T:
-			target_pos = np.array(self.goal)
+			target_pos = np.array(self.real_goal)
 		else:
-			prev = np.array(self.start)
-			next = np.array(self.goal)
+			prev = np.array(self.real_start)
+			next = np.array(self.real_goal)		
 			ti = 0
 			tf = self.final_T
 			target_pos = (next - prev)*((curr_time-ti)/(tf - ti)) + prev		
-		
+
 		self.human_pose = PoseStamped()
 		self.human_pose.header.frame_id="/frame_id_1"
 		self.human_pose.header.stamp = rospy.Time.now()
 		# set the current timestamp
 		# self.human_pose.header.stamp.secs = curr_time
-		self.human_pose.pose.position.x = target_pos[0]/self.res
-		self.human_pose.pose.position.y = target_pos[1]/self.res
+		self.human_pose.pose.position.x = target_pos[0]
+		self.human_pose.pose.position.y = target_pos[1]
 		self.human_pose.pose.position.z = 0.0
+
+	def sim_to_real_coord(self, sim_coord):
+			"""
+			Takes [x,y] coordinate in simulation frame and returns a shifted
+			value in the ROS coordinates
+			"""
+			return [sim_coord[0]*self.res - (self.real_width/2.0), 
+							sim_coord[1]*self.res - (self.real_height/2.0)]
+
+	def real_to_sim_coord(self, real_coord):
+		"""
+		Takes [x,y] coordinate in the ROS real frame, and returns a shifted
+		value in the simulation frame
+		"""
+		return [int((real_coord[0]+self.real_width/2.0)/self.res), 
+						int((real_coord[1]+self.real_height/2.0)/self.res)]
 
 if __name__ == '__main__':
 

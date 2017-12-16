@@ -7,7 +7,7 @@
 	<node name="simulate_human" pkg="crazyflie_human" type="sim_human.py" output="screen"/>
 	
 	<!-- simulate world -->
-	<node name="simulate_world" pkg="crazyflie_human" type="ros_comm.py" output="screen"/> -->
+	<node name="human_prediction" pkg="crazyflie_human" type="human_pred.py" output="screen"/> -->
 
 	<!-- Start RVIZ 
 	<node pkg="rviz" type="rviz" name="rviz"/>--> 
