@@ -118,7 +118,7 @@ class HumanPrediction(object):
 		self.occu_pub = rospy.Publisher('/occupancy_grid_time', OccupancyGridTime, queue_size=1)
 		self.goal_pub = rospy.Publisher('/goal_marker', Marker, queue_size=10)
 		self.start_pub = rospy.Publisher('/start_marker', Marker, queue_size=10)
-		self.grid_vis_pub = rospy.Publisher('/grid_vis_marker', Marker, queue_size=10)
+		self.grid_vis_pub = rospy.Publisher('/occu_grid_marker', Marker, queue_size=10)
 
 	# ---- Inference Functionality ---- #
 
@@ -136,10 +136,9 @@ class HumanPrediction(object):
 		self.occu_pub.publish(self.grid_to_message())
 
 		# TODO THIS IS DEBUG
-		self.visualize_occugrid(1.5)
-		#self.visualize_occugrid(2)
-		#self.visualize_occugrid(3)
-		#self.visualize_occugrid(3.8)
+		
+		for i in range(1,self.fwd_tsteps):
+			self.visualize_occugrid(i)
 
 	def update_human_traj(self, newstate):
 		"""
@@ -314,6 +313,7 @@ class HumanPrediction(object):
 		"""
 		Visualizes occupancy grid at time
 		"""
+		"""
 		marker = Marker()
 		marker.header.frame_id = "/world"
 		marker.header.stamp = rospy.Time.now()
@@ -337,6 +337,7 @@ class HumanPrediction(object):
 		marker.pose.position.z = 0.0+0.5*marker.scale.z
 
 		self.grid_vis_pub.publish(marker)
+		"""
 
 		if self.occupancy_grids is not None:
 			grid = self.interpolate_grid(time)
@@ -356,19 +357,21 @@ class HumanPrediction(object):
 						marker.type = marker.CUBE
 						marker.action = marker.ADD
 
-						marker.scale.x = 1
-						marker.scale.y = 1
-						marker.scale.z = self.human_height
-						marker.color.a = 0.4
+						marker.scale.x = self.res
+						marker.scale.y = self.res
+						marker.scale.z = self.human_height*grid[i]
+						if (marker.scale.z < 1e-8):
+							marker.scale.z = 0.001
+						marker.color.a = 0.8
 						marker.color.r = 1
 						marker.color.g = 1 - grid[i]
-						marker.color.b = 0
-
+						marker.color.b = grid[i]
+					
 						marker.pose.orientation.w = 1
 						marker.pose.position.z = 0
 						marker.pose.position.x = real_coord[0]
 						marker.pose.position.y = real_coord[1]
-						marker.pose.position.z = 2
+						marker.pose.position.z = marker.scale.z/2 
 
 						self.grid_vis_pub.publish(marker)
 

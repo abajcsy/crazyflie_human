@@ -39,7 +39,7 @@ class SimHuman(object):
 
 		# start and goal locations 
 		self.sim_start = rospy.get_param("pred/sim_start")
-		self.sim_goals = rospy.get_param("pred/sim_goals")
+		self.sim_goals = rospy.get_param("pred/sim_goals")  
 
 		# resolution (m/cell)
 		self.res = rospy.get_param("pred/resolution")
@@ -90,7 +90,7 @@ class SimHuman(object):
 		if self.human_pose is not None:
 			marker.pose.position.x = self.human_pose.pose.position.x 
 			marker.pose.position.y = self.human_pose.pose.position.y
-			marker.pose.position.z = 2
+			marker.pose.position.z = marker.scale.z/2.0
 		else:
 			marker.pose.position.x = 0
 			marker.pose.position.y = 0
