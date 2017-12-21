@@ -2,18 +2,18 @@ state:
 
   # Upper and lower bounds for state space.
   # In the quadrotor 6D model, state is [x, y, z, vx, vy, vz].
-  upper: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
-  lower: [-10.0, -10.0, 0.0, -10.0, -10.0, -10.0]
+  lower: [-20.0, -20.0, 0.0, -1.0, -1.0, -1.0]
+  upper: [20.0, 20.0, 20.0, 1.0, 1.0, 1.0]
 
 pred:
 
   # Dimensions of the prediction map
-  sim_height: 20
-  sim_width: 20
+  sim_height: 40
+  sim_width: 40
 
   # Start position of human and list of potential goal locations
   sim_start: [0, 0]
-  sim_goals: [[19, 10]]
+  sim_goals: [[39, 20], [20, 39]]
 
   # Resolution, ex. 20 meters/10 sim dim (m/cell)
   resolution: 1

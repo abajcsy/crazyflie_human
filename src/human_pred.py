@@ -5,7 +5,7 @@ import sys, select, os
 import numpy as np
 import time
 
-from std_msgs.msg import String
+from std_msgs.msg import String, Float32
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, Pose2D
 from visualization_msgs.msg import Marker, MarkerArray
@@ -17,9 +17,8 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../../")
 
 from pedestrian_prediction.pp.mdp import GridWorldMDP
 from pedestrian_prediction.pp.inference import hardmax as inf
-from pedestrian_prediction.pp.plot import plot_heat_maps
 
-A = GridWorldMDP.Actions
+Actions = GridWorldMDP.Actions
 
 class HumanPrediction(object):
 	"""
@@ -49,7 +48,8 @@ class HumanPrediction(object):
 			# TODO this is only for 1 goal right now
 			# plot start/goal markers for visualization
 			self.start_pub.publish(self.state_to_marker(xy=self.real_start, color="G"))
-			self.goal_pub.publish(self.state_to_marker(xy=self.real_goals[0], color="R"))
+			for g in self.real_goals:
+				self.goal_pub.publish(self.state_to_marker(xy=g, color="R"))
 
 			rate.sleep()
 
@@ -74,7 +74,7 @@ class HumanPrediction(object):
 		self.fwd_tsteps = rospy.get_param("pred/fwd_tsteps")
 		self.fwd_deltat = rospy.get_param("pred/fwd_deltat")
 
-		# rationality coefficient
+		# MLE of rationality coefficient
 		self.beta = rospy.get_param("pred/init_beta")
 
 		self.human_height = rospy.get_param("pred/human_height")
@@ -100,7 +100,8 @@ class HumanPrediction(object):
 		self.real_goals = [self.sim_to_real_coord(g) for g in self.sim_goals]
 
 		# tracks the human's state over time
-		self.human_traj = None
+		self.real_human_traj = None
+		self.sim_human_traj = None
 
 		# set start time to None until get first human state message
 		self.start_t = None
@@ -116,6 +117,7 @@ class HumanPrediction(object):
 
 		# occupancy grid publisher & small publishers for visualizing the start/goal
 		self.occu_pub = rospy.Publisher('/occupancy_grid_time', OccupancyGridTime, queue_size=1)
+		self.beta_pub = rospy.Publisher('/beta_topic', Float32, queue_size=1)
 		self.goal_pub = rospy.Publisher('/goal_marker', Marker, queue_size=10)
 		self.start_pub = rospy.Publisher('/start_marker', Marker, queue_size=10)
 		self.grid_vis_pub = rospy.Publisher('/occu_grid_marker', Marker, queue_size=10)
@@ -145,10 +147,14 @@ class HumanPrediction(object):
 		Given a new sensor measurement of where the human is, update the tracked
 		trajectory of the human's movements.
 		"""
-		if self.human_traj is None:
-			self.human_traj = np.array([newstate])
+		if self.real_human_traj is None:
+			self.real_human_traj = np.array([newstate])
+			self.sim_human_traj = np.array([self.real_to_sim_coord(newstate)])
 		else:
-			self.human_traj = np.append(self.human_traj, np.array([newstate]), 0)
+			self.real_human_traj = np.append(self.real_human_traj, 
+																np.array([newstate]), 0)
+			self.sim_human_traj = np.append(self.sim_human_traj, 
+																np.array([self.real_to_sim_coord(newstate)]), 0)
 
 	# TODO we need to have beta updated over time, and have a beta for each goal
 	def infer_occupancies(self):
@@ -156,27 +162,71 @@ class HumanPrediction(object):
 		Using the current trajectory data, recompute a new occupancy grid
 		for where the human might be
 		"""
-		if self.human_traj is None:
+		if self.real_human_traj is None:
 			print "Can't infer occupancies -- human hasn't appeared yet!"
 			return 
 
-		# TODO update beta here
+		dest_list = [self.gridworld.coor_to_state(g[0], g[1]) for g in self.sim_goals]
+		traj = self.traj_to_state_action()
 
-		sim_coord = self.real_to_sim_coord(self.human_traj[-1])
-		#print "(real) human traj latest: " + str(self.human_traj[-1])
-		#print "(sim) corrected human traj: ", corrected
+		# TODO update beta here!
+    #dest_probs, betas = inf.destination.infer(self.gridworld, human_traj, 
+		#										self.sim_goals, beta_guesses=beta_guesses, **bin_search_opt)
 
-		goal = self.sim_goals[0]		# TODO only for one goal
-
-		curr_state = self.gridworld.coor_to_state(sim_coord[0], sim_coord[1])
-		curr_goal = self.gridworld.coor_to_state(goal[0], goal[1])	
+		# update the beta publisher
+		beta_msg = Float32()
+		beta_msg.data = self.beta
+		self.beta_pub.publish(beta_msg)
 
 		# returns all state probabilities for timesteps 0,1,...,T in a 2D array. 
 		# (with dimension (T+1) x (height x width)
-		self.occupancy_grids = inf.state.infer_from_start(self.gridworld, curr_state,
-									curr_goal, T=self.fwd_tsteps, beta=self.beta, all_steps=True)
+		#self.occupancy_grids = inf.state.infer_from_start(self.gridworld, self.sim_human_traj[-1],
+		#							dest_list[0], T=self.fwd_tsteps, beta=self.beta, all_steps=True)
 
+		# verbose_return=True --> (D, D_dests, dest_probs, betas)
+		self.occupancy_grids = inf.occupancy.infer(self.gridworld, traj, 
+														dest_list, T=self.fwd_tsteps, verbose=False)
+  
 	# ---- Utility Functions ---- #
+
+	def traj_to_state_action(self):
+		"""
+		Converts the measured traj in sim_human_traj into (state, action) traj
+		"""		
+		# get list of actions
+		actions = [None]*len(self.sim_human_traj)
+		prev = self.sim_human_traj[0]
+		for i in range(1,len(self.sim_human_traj)):
+			next = self.sim_human_traj[1]
+			xdiff = next[0] - prev[0]
+			ydiff = next[1] - prev[1]
+			if xdiff < 0:
+				if ydiff < 0:
+						actions[i] = Actions.DOWN_LEFT
+				elif ydiff == 0:	
+						actions[i] = Actions.LEFT		
+				else:
+						actions[i] = Actions.UP_LEFT
+			elif xdiff == 0:
+				if ydiff < 0:
+						actions[i] = Actions.DOWN
+				elif ydiff == 0:
+						actions[i] = Actions.ABSORB
+				else:
+						actions[i] = Actions.UP
+			else:
+				if ydiff < 0:
+					actions[i] = Actions.DOWN_RIGHT
+				elif ydiff == 0:
+					actions[i] = Actions.RIGHT
+				else:
+					actions[i] = Actions.UP_RIGHT
+
+		states = [self.gridworld.coor_to_state(s[0], s[1]) for s in self.sim_human_traj]
+		sa_traj = []
+		for i in range(len(actions)):			
+			sa_traj.append((states[i], actions[i]))
+		return sa_traj
 	
 	def sim_to_real_coord(self, sim_coord):
 		"""
@@ -360,12 +410,16 @@ class HumanPrediction(object):
 						marker.scale.x = self.res
 						marker.scale.y = self.res
 						marker.scale.z = self.human_height*grid[i]
-						if (marker.scale.z < 1e-8):
-							marker.scale.z = 0.001
 						marker.color.a = 0.8
 						marker.color.r = 1
 						marker.color.g = 1 - grid[i]
 						marker.color.b = grid[i]
+						if (marker.scale.z < 1e-8):
+							marker.scale.z = 0.001
+							marker.color.a = 0.8
+							marker.color.r = 0
+							marker.color.g = 0.5
+							marker.color.b = 0.7
 					
 						marker.pose.orientation.w = 1
 						marker.pose.position.z = 0

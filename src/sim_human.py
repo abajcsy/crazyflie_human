@@ -60,7 +60,7 @@ class SimHuman(object):
 		self.real_goal = self.sim_to_real_coord(self.sim_goals[0]) # TODO THIS ONLY WORKS FOR 1 GOAL
 
 		self.start_T = rospy.Time.now().secs
-		self.final_T = 20.0
+		self.final_T = 30.0
 		self.human_pose = None
 
 	def register_callbacks(self):
