@@ -13,7 +13,7 @@ pred:
 
   # Start position of human and list of potential goal locations
   sim_start: [0, 0]
-  sim_goals: [[39, 20], [20, 39]]
+  sim_goals: [[39, 39]] #[20, 39], [39, 20]
 
   # Resolution, ex. 20 meters/10 sim dim (m/cell)
   resolution: 1

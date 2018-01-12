@@ -38,6 +38,19 @@ class HumanPrediction(object):
 		self.load_parameters()
 		self.register_callbacks()
 
+		# make a marker array for all the goals
+
+		marker_array = MarkerArray()
+		for g in self.real_goals:
+			marker = self.state_to_marker(xy=g, color="R")
+			marker_array.markers.append(marker)
+
+		# Re-number the marker IDs
+		id = 0
+		for m in marker_array.markers:
+			m.id = id
+			id += 1
+
 		rate = rospy.Rate(100) 
 
 		while not rospy.is_shutdown():
@@ -48,8 +61,7 @@ class HumanPrediction(object):
 			# TODO this is only for 1 goal right now
 			# plot start/goal markers for visualization
 			self.start_pub.publish(self.state_to_marker(xy=self.real_start, color="G"))
-			for g in self.real_goals:
-				self.goal_pub.publish(self.state_to_marker(xy=g, color="R"))
+			self.goal_pub.publish(marker_array)
 
 			rate.sleep()
 
@@ -63,7 +75,7 @@ class HumanPrediction(object):
 		self.sim_height = int(rospy.get_param("pred/sim_height"))
 		self.sim_width = int(rospy.get_param("pred/sim_width"))
 
-		# start and goal locations 
+		# (simulation) start and goal locations 
 		self.sim_start = rospy.get_param("pred/sim_start")
 		self.sim_goals = rospy.get_param("pred/sim_goals")
 
@@ -95,7 +107,7 @@ class HumanPrediction(object):
 		self.real_height = up[1] - low[1] 
 		self.real_width = up[0] - low[0] 
 
-		# start and goal locations 
+		# (real-world) start and goal locations 
 		self.real_start = self.sim_to_real_coord(self.sim_start)
 		self.real_goals = [self.sim_to_real_coord(g) for g in self.sim_goals]
 
@@ -118,7 +130,7 @@ class HumanPrediction(object):
 		# occupancy grid publisher & small publishers for visualizing the start/goal
 		self.occu_pub = rospy.Publisher('/occupancy_grid_time', OccupancyGridTime, queue_size=1)
 		self.beta_pub = rospy.Publisher('/beta_topic', Float32, queue_size=1)
-		self.goal_pub = rospy.Publisher('/goal_marker', Marker, queue_size=10)
+		self.goal_pub = rospy.Publisher('/goal_markers', MarkerArray, queue_size=10)
 		self.start_pub = rospy.Publisher('/start_marker', Marker, queue_size=10)
 		self.grid_vis_pub = rospy.Publisher('/occu_grid_marker', Marker, queue_size=10)
 
@@ -135,10 +147,10 @@ class HumanPrediction(object):
 		self.infer_occupancies() 
 
 		# publish occupancy grid list
-		self.occu_pub.publish(self.grid_to_message())
+		if self.occupancy_grids is not None:
+			self.occu_pub.publish(self.grid_to_message())
 
 		# TODO THIS IS DEBUG
-		
 		for i in range(1,self.fwd_tsteps):
 			self.visualize_occugrid(i)
 
@@ -147,14 +159,21 @@ class HumanPrediction(object):
 		Given a new sensor measurement of where the human is, update the tracked
 		trajectory of the human's movements.
 		"""
+		sim_newstate = self.real_to_sim_coord(newstate)
 		if self.real_human_traj is None:
 			self.real_human_traj = np.array([newstate])
-			self.sim_human_traj = np.array([self.real_to_sim_coord(newstate)])
+			self.sim_human_traj = np.array([sim_newstate])
 		else:
 			self.real_human_traj = np.append(self.real_human_traj, 
 																np.array([newstate]), 0)
-			self.sim_human_traj = np.append(self.sim_human_traj, 
-																np.array([self.real_to_sim_coord(newstate)]), 0)
+			# if the new measured state does not map to the same state in sim, add it
+			# to the simulated trajectory. We need this for the inference to work
+
+			in_same_state = (sim_newstate == self.sim_human_traj[-1]).all()
+			if not in_same_state:
+				self.sim_human_traj = np.append(self.sim_human_traj, 
+																	np.array([sim_newstate]), 0)
+
 
 	# TODO we need to have beta updated over time, and have a beta for each goal
 	def infer_occupancies(self):
@@ -162,21 +181,16 @@ class HumanPrediction(object):
 		Using the current trajectory data, recompute a new occupancy grid
 		for where the human might be
 		"""
-		if self.real_human_traj is None:
+		if self.real_human_traj is None or self.sim_human_traj is None:
 			print "Can't infer occupancies -- human hasn't appeared yet!"
+			return 
+
+		if len(self.sim_human_traj) < 2:
+			print "Not inferring occupancy -- human hasn't moved from first gridcell yet!"
 			return 
 
 		dest_list = [self.gridworld.coor_to_state(g[0], g[1]) for g in self.sim_goals]
 		traj = self.traj_to_state_action()
-
-		# TODO update beta here!
-    #dest_probs, betas = inf.destination.infer(self.gridworld, human_traj, 
-		#										self.sim_goals, beta_guesses=beta_guesses, **bin_search_opt)
-
-		# update the beta publisher
-		beta_msg = Float32()
-		beta_msg.data = self.beta
-		self.beta_pub.publish(beta_msg)
 
 		# returns all state probabilities for timesteps 0,1,...,T in a 2D array. 
 		# (with dimension (T+1) x (height x width)
@@ -184,50 +198,82 @@ class HumanPrediction(object):
 		#							dest_list[0], T=self.fwd_tsteps, beta=self.beta, all_steps=True)
 
 		# verbose_return=True --> (D, D_dests, dest_probs, betas)
-		self.occupancy_grids = inf.occupancy.infer(self.gridworld, traj, 
-														dest_list, T=self.fwd_tsteps, verbose=False)
+		(self.occupancy_grids, self.betas, self.dest_probs) = inf.state.infer(
+																									self.gridworld, traj, 
+																									dest_list, T=self.fwd_tsteps, 
+																									verbose=True)
+
+		print "betas: ", self.betas
+		# TODO THIS IS UNCHECKED
+		# update the beta publisher
+		beta_msg = Float32()
+		beta_msg.data = np.amax(self.betas)
+		self.beta_pub.publish(beta_msg)
+
+		#print "occupancy grid: ", self.occupancy_grids
   
 	# ---- Utility Functions ---- #
 
 	def traj_to_state_action(self):
 		"""
-		Converts the measured traj in sim_human_traj into (state, action) traj
+		Converts the measured state-based sim_human_traj into (state, action) traj
 		"""		
-		# get list of actions
-		actions = [None]*len(self.sim_human_traj)
-		prev = self.sim_human_traj[0]
+		prev = self.sim_human_traj[0]		
+		states = np.array([prev])
+		actions = None
 		for i in range(1,len(self.sim_human_traj)):
-			next = self.sim_human_traj[1]
-			xdiff = next[0] - prev[0]
-			ydiff = next[1] - prev[1]
-			if xdiff < 0:
-				if ydiff < 0:
-						actions[i] = Actions.DOWN_LEFT
-				elif ydiff == 0:	
-						actions[i] = Actions.LEFT		
-				else:
-						actions[i] = Actions.UP_LEFT
-			elif xdiff == 0:
-				if ydiff < 0:
-						actions[i] = Actions.DOWN
-				elif ydiff == 0:
-						actions[i] = Actions.ABSORB
-				else:
-						actions[i] = Actions.UP
-			else:
-				if ydiff < 0:
-					actions[i] = Actions.DOWN_RIGHT
-				elif ydiff == 0:
-					actions[i] = Actions.RIGHT
-				else:
-					actions[i] = Actions.UP_RIGHT
+			next = self.sim_human_traj[i]
+			# dont consider duplicates of the same measurement
+			if not np.array_equal(prev, next):
+				states = np.append(states, [next], 0)
+				curr_action = self.motion_to_action(prev, next)
 
-		states = [self.gridworld.coor_to_state(s[0], s[1]) for s in self.sim_human_traj]
+				if actions is None:
+					actions = np.array([curr_action])
+				else:
+					actions = np.append(actions, curr_action)			
+			prev = next
+
+		grid_states = [self.gridworld.coor_to_state(s[0], s[1]) for s in states]
+
 		sa_traj = []
-		for i in range(len(actions)):			
-			sa_traj.append((states[i], actions[i]))
+		if actions is not None:
+			for i in range(len(actions)):			
+				sa_traj.append((grid_states[i], actions[i]))
+
 		return sa_traj
-	
+
+	def motion_to_action(self, prev_pos, next_pos):
+		"""
+		Takes two measured positions of the human (previous and next) 
+		and returns the gridworld action that the human took.
+		"""
+		xdiff = next_pos[0] - prev_pos[0]
+		ydiff = next_pos[1] - prev_pos[1]
+		if xdiff < 0:
+			if ydiff < 0:
+					action = Actions.DOWN_LEFT
+			elif ydiff == 0:	
+					action = Actions.LEFT		
+			else:
+					action = Actions.UP_LEFT
+		elif xdiff == 0:
+			if ydiff < 0:
+					actions[i-1] = Actions.DOWN
+			elif ydiff == 0:
+					action = Actions.ABSORB		# note this should only happen at goal
+			else:
+					action = Actions.UP
+		else:
+			if ydiff < 0:
+				action = Actions.DOWN_RIGHT
+			elif ydiff == 0:
+				action = Actions.RIGHT
+			else:
+				action = Actions.UP_RIGHT	
+
+		return action
+
 	def sim_to_real_coord(self, sim_coord):
 		"""
 		Takes [x,y] coordinate in simulation frame and returns a shifted
@@ -338,6 +384,7 @@ class HumanPrediction(object):
 		"""
 		marker = Marker()
 		marker.header.frame_id = "/world"
+		marker.header.stamp = rospy.Time().now()
 
 		marker.type = marker.SPHERE
 		marker.action = marker.ADD
