@@ -265,7 +265,7 @@ class HumanPrediction(object):
 					action = Actions.UP_LEFT
 		elif xdiff == 0:
 			if ydiff < 0:
-					actions[i-1] = Actions.DOWN
+					action = Actions.DOWN
 			elif ydiff == 0:
 					action = Actions.ABSORB		# note this should only happen at goal
 			else:
@@ -499,7 +499,7 @@ class HumanPrediction(object):
 		marker.color.a = 1.0
 		marker.color.r = 1.0
 
-		if human_pose is not None:
+		if xypose is not None:
 			marker.pose.position.x = xypose[0] 
 			marker.pose.position.y = xypose[1]
 			marker.pose.position.z = marker.scale.z/2.0
