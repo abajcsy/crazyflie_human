@@ -493,8 +493,8 @@ class HumanPrediction(object):
 		marker.action = marker.ADD
 		marker.pose.orientation.w = 1
 		marker.pose.position.z = 0.1
-		marker.scale.x = 1
-		marker.scale.y = 1
+		marker.scale.x = self.res
+		marker.scale.y = self.res
 		marker.scale.z = self.human_height
 		marker.color.a = 1.0
 		marker.color.r = 1.0

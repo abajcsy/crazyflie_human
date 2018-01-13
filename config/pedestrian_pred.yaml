@@ -12,10 +12,10 @@ pred:
 
   # Start position of human and list of potential goal locations
   sim_start: [0, 0]
-  sim_goals: [[24, 24]] 
+  sim_goals: [[23, 23]] 
 
-  # Resolution, ex. 20 meters/10 sim dim (m/cell)
-  resolution: 0.1525
+  # Resolution, ex. (real meters)/(sim dim-1) (m/cell)
+  resolution: 0.15913
 
   # Num timesteps into the future to predict
   fwd_tsteps: 10

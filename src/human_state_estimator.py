@@ -14,11 +14,9 @@ if __name__ == '__main__':
 	rate = rospy.Rate(100.0)
 	while not rospy.is_shutdown():
 		try:
-			(trans,rot) = listener.lookupTransform('/vicon/hat/hat', '/world', rospy.Time(0))
+			(trans,rot) = listener.lookupTransform('/world', '/vicon/hat/hat', rospy.Time(0))
 		except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
 			continue
-
-		print "hat loc: ", trans
 
 		human_pose = geometry_msgs.msg.PoseStamped()
 		human_pose.header.frame_id="/world"
