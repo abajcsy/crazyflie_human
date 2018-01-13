@@ -133,6 +133,7 @@ class HumanPrediction(object):
 		self.goal_pub = rospy.Publisher('/goal_markers', MarkerArray, queue_size=10)
 		self.start_pub = rospy.Publisher('/start_marker', Marker, queue_size=10)
 		self.grid_vis_pub = rospy.Publisher('/occu_grid_marker', Marker, queue_size=10)
+		self.marker_pub = rospy.Publisher('/human_marker', Marker, queue_size=10)
 
 	# ---- Inference Functionality ---- #
 
@@ -140,9 +141,14 @@ class HumanPrediction(object):
 		"""
 		Grabs the human's state from the mocap publisher
 		"""
+		xypose = [msg.pose.position.x, msg.pose.position.y]
+
 		# update the map with where the human is at the current time
-		self.update_human_traj([msg.pose.position.x, msg.pose.position.y])
+		self.update_human_traj(xypose)
 	
+		# update human pose marker
+		self.marker_pub.publish(self.pose_to_marker(xypose))
+
 		# infer the new human occupancy map from the current state
 		self.infer_occupancies() 
 
@@ -475,6 +481,34 @@ class HumanPrediction(object):
 						marker.pose.position.z = marker.scale.z/2 
 
 						self.grid_vis_pub.publish(marker)
+
+	def pose_to_marker(self, xypose):
+		"""
+		Converts pose to marker type to vizualize human
+		"""
+		marker = Marker()
+		marker.header.frame_id = "/world"
+
+		marker.type = marker.CUBE
+		marker.action = marker.ADD
+		marker.pose.orientation.w = 1
+		marker.pose.position.z = 0.1
+		marker.scale.x = 1
+		marker.scale.y = 1
+		marker.scale.z = self.human_height
+		marker.color.a = 1.0
+		marker.color.r = 1.0
+
+		if human_pose is not None:
+			marker.pose.position.x = xypose[0] 
+			marker.pose.position.y = xypose[1]
+			marker.pose.position.z = marker.scale.z/2.0
+		else:
+			marker.pose.position.x = 0
+			marker.pose.position.y = 0
+			marker.pose.position.z = 2
+
+		return marker
 
 if __name__ == '__main__':
 
