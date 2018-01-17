@@ -1,8 +1,8 @@
 state:
 
   # Upper and lower bounds for experimental space (meters). [x, y, z]
-  lower: [-2.98, -1.04, 0]
-  upper: [0.77, 2.62, 2.0]
+  lower: [-2.94, -1.04, 0] #-2.98
+  upper: [0.72, 2.62, 2.0] #0.77
 
 pred:
 

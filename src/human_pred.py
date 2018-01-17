@@ -58,7 +58,6 @@ class HumanPrediction(object):
 				line = raw_input()
 				break
 
-			# TODO this is only for 1 goal right now
 			# plot start/goal markers for visualization
 			self.start_pub.publish(self.state_to_marker(xy=self.real_start, color="G"))
 			self.goal_pub.publish(marker_array)
@@ -106,6 +105,9 @@ class HumanPrediction(object):
 		# get real-world measurements of experimental space
 		self.real_height = up[1] - low[1] 
 		self.real_width = up[0] - low[0] 
+		# store the lower and upper measurements
+		self.real_lower = low
+		self.real_upper = up
 
 		# (real-world) start and goal locations 
 		self.real_start = self.sim_to_real_coord(self.sim_start)
@@ -141,7 +143,8 @@ class HumanPrediction(object):
 		"""
 		Grabs the human's state from the mocap publisher
 		"""
-		xypose = [msg.pose.position.x, msg.pose.position.y]
+		# get the human's current state and make sure its always a valid location
+		xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
 
 		# update the map with where the human is at the current time
 		self.update_human_traj(xypose)
@@ -160,12 +163,27 @@ class HumanPrediction(object):
 		for i in range(1,self.fwd_tsteps):
 			self.visualize_occugrid(i)
 
+	def make_valid_state(self, xypose):
+		"""
+		Takes human state measurement, checks if its inside of the world grid, and 
+		creates a valid [x,y] position. 
+		If human is in valid [x,y] grid location, returns original xypose
+		Else if human is NOT valid, then clips the human's pose to a valid location
+		"""
+		valid_xypose = [np.clip(xypose[0], self.real_lower[0], self.real_upper[0]),
+										np.clip(xypose[1], self.real_lower[1], self.real_upper[1])]		
+
+		return valid_xypose
+
 	def update_human_traj(self, newstate):
 		"""
 		Given a new sensor measurement of where the human is, update the tracked
 		trajectory of the human's movements.
 		"""
 		sim_newstate = self.real_to_sim_coord(newstate)
+
+		print "newstate: ", newstate
+		print "sim newstate: ", sim_newstate
 		if self.real_human_traj is None:
 			self.real_human_traj = np.array([newstate])
 			self.sim_human_traj = np.array([sim_newstate])
@@ -282,19 +300,19 @@ class HumanPrediction(object):
 
 	def sim_to_real_coord(self, sim_coord):
 		"""
-		Takes [x,y] coordinate in simulation frame and returns a shifted
-		value in the ROS coordinates
+		Takes [x,y] coordinate in simulation frame and returns a rotated and 
+		shifted	value in the ROS coordinates
 		"""
-		return [sim_coord[0]*self.res - (self.real_width/2.0), 
-						sim_coord[1]*self.res - (self.real_height/2.0)]
+		return [sim_coord[0]*self.res + self.real_lower[0], 
+						self.real_upper[1] - sim_coord[1]*self.res]
 
 	def real_to_sim_coord(self, real_coord):
 		"""
-		Takes [x,y] coordinate in the ROS real frame, and returns a shifted
-		value in the simulation frame
+		Takes [x,y] coordinate in the ROS real frame, and returns a rotated and 
+		shifted	value in the simulation frame
 		"""
-		return [int((real_coord[0]+self.real_width/2.0)/self.res), 
-						int((real_coord[1]+self.real_height/2.0)/self.res)]
+		return [int(round((real_coord[0] - self.real_lower[0])/self.res)),
+						int(round((self.real_upper[1] - real_coord[1])/self.res))]
 
 	def interpolate_grid(self, future_time):
 		"""

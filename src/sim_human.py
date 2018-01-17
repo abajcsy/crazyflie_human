@@ -28,7 +28,7 @@ class SimHuman(object):
 			t = rospy.Time.now().secs - self.start_T
 			self.update_pose(t)
 			self.state_pub.publish(self.human_pose)
-			self.marker_pub.publish(self.pose_to_marker())
+			#self.marker_pub.publish(self.pose_to_marker())
 			rate.sleep()
 
 	def load_parameters(self):
@@ -54,6 +54,8 @@ class SimHuman(object):
 		# get real-world measurements of experimental space
 		self.real_height = up[1] - low[1] 
 		self.real_width = up[0] - low[0] 
+		self.real_lower = low
+		self.real_upper = up
 
 		# start and goal locations 
 		self.real_start = self.sim_to_real_coord(self.sim_start)
@@ -122,20 +124,20 @@ class SimHuman(object):
 		self.human_pose.pose.position.z = 0.0
 
 	def sim_to_real_coord(self, sim_coord):
-			"""
-			Takes [x,y] coordinate in simulation frame and returns a shifted
-			value in the ROS coordinates
-			"""
-			return [sim_coord[0]*self.res - (self.real_width/2.0), 
-							sim_coord[1]*self.res - (self.real_height/2.0)]
+		"""
+		Takes [x,y] coordinate in simulation frame and returns a rotated and 
+		shifted	value in the ROS coordinates
+		"""
+		return [sim_coord[0]*self.res + self.real_lower[0], 
+						self.real_upper[1] - sim_coord[1]*self.res]
 
 	def real_to_sim_coord(self, real_coord):
 		"""
-		Takes [x,y] coordinate in the ROS real frame, and returns a shifted
-		value in the simulation frame
+		Takes [x,y] coordinate in the ROS real frame, and returns a rotated and 
+		shifted	value in the simulation frame
 		"""
-		return [int((real_coord[0]+self.real_width/2.0)/self.res), 
-						int((real_coord[1]+self.real_height/2.0)/self.res)]
+		return [int(round((real_coord[0] - self.real_lower[0])/self.res)),
+						int(round((self.real_upper[1] - real_coord[1])/self.res))]
 
 if __name__ == '__main__':
 
