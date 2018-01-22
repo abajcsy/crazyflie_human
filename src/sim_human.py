@@ -39,7 +39,7 @@ class SimHuman(object):
 
 		# start and goal locations 
 		self.sim_start = rospy.get_param("pred/sim_start")
-		self.sim_goals = rospy.get_param("pred/sim_goals")  
+		self.sim_goals = [[23,23]]#rospy.get_param("pred/sim_goals")  
 
 		# resolution (m/cell)
 		self.res = rospy.get_param("pred/resolution")

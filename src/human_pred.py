@@ -94,6 +94,9 @@ class HumanPrediction(object):
 		# stores 2D array of size (fwd_tsteps) x (height x width) of probabilities
 		self.occupancy_grids = None
 
+		# stores list of beta values for each goal
+		self.betas = None
+
 		# grid world representing the experimental environment
 		self.gridworld = GridWorldMDP(self.sim_height, self.sim_width, {}, default_reward=-4)
 
@@ -152,9 +155,6 @@ class HumanPrediction(object):
 		# update human pose marker
 		self.marker_pub.publish(self.pose_to_marker(xypose))
 
-		# infer the new human occupancy map from the current state
-		self.infer_occupancies() 
-
 		# publish occupancy grid list
 		if self.occupancy_grids is not None:
 			self.occu_pub.publish(self.grid_to_message())
@@ -182,21 +182,25 @@ class HumanPrediction(object):
 		"""
 		sim_newstate = self.real_to_sim_coord(newstate)
 
-		print "newstate: ", newstate
-		print "sim newstate: ", sim_newstate
+		#print "newstate: ", newstate
+		#print "sim newstate: ", sim_newstate
 		if self.real_human_traj is None:
 			self.real_human_traj = np.array([newstate])
 			self.sim_human_traj = np.array([sim_newstate])
 		else:
 			self.real_human_traj = np.append(self.real_human_traj, 
 																np.array([newstate]), 0)
+
 			# if the new measured state does not map to the same state in sim, add it
 			# to the simulated trajectory. We need this for the inference to work
-
 			in_same_state = (sim_newstate == self.sim_human_traj[-1]).all()
 			if not in_same_state:
 				self.sim_human_traj = np.append(self.sim_human_traj, 
 																	np.array([sim_newstate]), 0)
+
+				# if human has moved to new grid location, 
+				# infer the new human occupancy map from the current state
+				self.infer_occupancies() 
 
 
 	# TODO we need to have beta updated over time, and have a beta for each goal
@@ -218,21 +222,16 @@ class HumanPrediction(object):
 
 		# returns all state probabilities for timesteps 0,1,...,T in a 2D array. 
 		# (with dimension (T+1) x (height x width)
-		#self.occupancy_grids = inf.state.infer_from_start(self.gridworld, self.sim_human_traj[-1],
-		#							dest_list[0], T=self.fwd_tsteps, beta=self.beta, all_steps=True)
-
-		# verbose_return=True --> (D, D_dests, dest_probs, betas)
+		# verbose_return=True --> (occupancy grid, betas, dest_probs)
 		(self.occupancy_grids, self.betas, self.dest_probs) = inf.state.infer(
 																									self.gridworld, traj, 
-																									dest_list, T=self.fwd_tsteps, 
-																									verbose=True)
+																									dest_list, T=self.fwd_tsteps)
 
-		print "betas: ", self.betas
 		# TODO THIS IS UNCHECKED
 		# update the beta publisher
-		beta_msg = Float32()
-		beta_msg.data = np.amax(self.betas)
-		self.beta_pub.publish(beta_msg)
+		#beta_msg = Float32()
+		#beta_msg.data = np.amax(self.betas)
+		#self.beta_pub.publish(beta_msg)
 
 		#print "occupancy grid: ", self.occupancy_grids
   
@@ -434,31 +433,6 @@ class HumanPrediction(object):
 		"""
 		Visualizes occupancy grid at time
 		"""
-		"""
-		marker = Marker()
-		marker.header.frame_id = "/world"
-		marker.header.stamp = rospy.Time.now()
-		marker.id = 0
-
-		marker.type = marker.CUBE
-		marker.action = marker.ADD
-
-		marker.scale.x = self.real_width
-		marker.scale.y = self.real_height
-		marker.scale.z = self.real_width/2.0
-		marker.color.a = 0.3
-		marker.color.r = 0.3
-		marker.color.g = 0.7
-		marker.color.b = 0.7
-
-		marker.pose.orientation.w = 1
-		marker.pose.position.z = 0
-		marker.pose.position.x = -self.real_height/2.0+0.5*marker.scale.x 
-		marker.pose.position.y = -self.real_width/2.0+0.5*marker.scale.y
-		marker.pose.position.z = 0.0+0.5*marker.scale.z
-
-		self.grid_vis_pub.publish(marker)
-		"""
 
 		if self.occupancy_grids is not None:
 			grid = self.interpolate_grid(time)
@@ -491,7 +465,7 @@ class HumanPrediction(object):
 							marker.color.r = 0
 							marker.color.g = 0.5
 							marker.color.b = 0.7
-					
+				
 						marker.pose.orientation.w = 1
 						marker.pose.position.z = 0
 						marker.pose.position.x = real_coord[0]
