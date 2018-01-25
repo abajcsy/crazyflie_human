@@ -39,7 +39,6 @@ class HumanPrediction(object):
 		self.register_callbacks()
 
 		# make a marker array for all the goals
-
 		marker_array = MarkerArray()
 		for g in self.real_goals:
 			marker = self.state_to_marker(xy=g, color="R")
@@ -122,6 +121,9 @@ class HumanPrediction(object):
 
 		# set start time to None until get first human state message
 		self.start_t = None
+		self.prev_t = None
+		# get the real-time timestep
+		self.deltat = rospy.get_param("pred/deltat")
 
 	#TODO THESE TOPICS SHOULD BE FROM THE YAML/LAUNCH FILE
 	def register_callbacks(self):
@@ -146,22 +148,26 @@ class HumanPrediction(object):
 		"""
 		Grabs the human's state from the mocap publisher
 		"""
-		# get the human's current state and make sure its always a valid location
-		xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
+		curr_time = rospy.Time.now()
 
-		# update the map with where the human is at the current time
-		self.update_human_traj(xypose)
+		# only use measurements of the human every deltat timesteps
+		if self.prev_t is not None and (curr_time - self.prev_t) > self.deltat:
+			# get the human's current state and make sure its always a valid location
+			xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
+
+			# update the map with where the human is at the current time
+			self.update_human_traj(xypose)
 	
-		# update human pose marker
-		self.marker_pub.publish(self.pose_to_marker(xypose))
+			# update human pose marker
+			self.marker_pub.publish(self.pose_to_marker(xypose))
 
-		# publish occupancy grid list
-		if self.occupancy_grids is not None:
-			self.occu_pub.publish(self.grid_to_message())
+			# publish occupancy grid list
+			if self.occupancy_grids is not None:
+				self.occu_pub.publish(self.grid_to_message())
 
-		# TODO THIS IS DEBUG
-		for i in range(1,self.fwd_tsteps):
-			self.visualize_occugrid(i)
+			# TODO THIS IS DEBUG
+			for i in range(1,self.fwd_tsteps):
+				self.visualize_occugrid(i)
 
 	def make_valid_state(self, xypose):
 		"""
@@ -180,6 +186,7 @@ class HumanPrediction(object):
 		Given a new sensor measurement of where the human is, update the tracked
 		trajectory of the human's movements.
 		"""
+
 		sim_newstate = self.real_to_sim_coord(newstate)
 
 		#print "newstate: ", newstate
@@ -376,6 +383,7 @@ class HumanPrediction(object):
 		# set the start time of the experiment to the time of first occugrid msg
 		if self.start_t is None:
 			self.start_t = curr_time.secs
+			self.prev_t = curr_time
 
 		for t in range(self.fwd_tsteps):
 			grid_msg = ProbabilityGrid()
