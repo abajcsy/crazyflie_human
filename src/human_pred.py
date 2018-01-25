@@ -73,10 +73,6 @@ class HumanPrediction(object):
 		self.sim_height = int(rospy.get_param("pred/sim_height"))
 		self.sim_width = int(rospy.get_param("pred/sim_width"))
 
-		# (simulation) start and goal locations 
-		self.sim_start = rospy.get_param("pred/sim_start")
-		self.sim_goals = rospy.get_param("pred/sim_goals")
-
 		# resolution (m/cell)
 		self.res = rospy.get_param("pred/resolution")
 
@@ -112,8 +108,17 @@ class HumanPrediction(object):
 		self.real_upper = up
 
 		# (real-world) start and goal locations 
-		self.real_start = self.sim_to_real_coord(self.sim_start)
-		self.real_goals = [self.sim_to_real_coord(g) for g in self.sim_goals]
+		self.real_start = rospy.get_param("pred/real_start") 
+		self.real_goals = rospy.get_param("pred/real_goals")
+
+		# (simulation) start and goal locations
+		self.sim_start = self.real_to_sim_coord(self.real_start)
+		print self.sim_start
+		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
+		self.sim_goals
+
+		#self.real_start = self.sim_to_real_coord(self.sim_start)
+		#self.real_goals = [self.sim_to_real_coord(g) for g in self.sim_goals]
 
 		# tracks the human's state over time
 		self.real_human_traj = None
@@ -224,6 +229,7 @@ class HumanPrediction(object):
 			print "Not inferring occupancy -- human hasn't moved from first gridcell yet!"
 			return 
 
+		print self.sim_goals
 		dest_list = [self.gridworld.coor_to_state(g[0], g[1]) for g in self.sim_goals]
 		traj = self.traj_to_state_action()
 
