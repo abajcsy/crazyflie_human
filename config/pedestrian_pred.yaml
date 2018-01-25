@@ -1,8 +1,8 @@
 state:
 
   # Upper and lower bounds for experimental space (meters). [x, y, z]
-  lower: [-2.94, -1.04, 0] #-2.98
-  upper: [0.72, 2.62, 2.0] #0.77
+  lower: [-2.0, -1.04, 0] 
+  upper: [1.66, 2.62, 2.0] 
 
 pred:
 
@@ -13,6 +13,9 @@ pred:
   # Start position of human and list of potential goal locations
   sim_start: [0, 0]
   sim_goals: [[23, 10], [10, 23]] 
+
+  real_start: [-1.049, 0.783] #[-1.988, -1.023]
+  real_goals: [[1.650, 0.480], [-0.465, 2.636]]
 
   # Resolution, ex. (real meters)/(sim dim-1) (m/cell)
   resolution: 0.15913
