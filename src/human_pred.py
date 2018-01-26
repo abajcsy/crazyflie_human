@@ -78,7 +78,6 @@ class HumanPrediction(object):
 
 		# simulation forward prediction parameters
 		self.fwd_tsteps = rospy.get_param("pred/fwd_tsteps")
-		self.fwd_deltat = rospy.get_param("pred/fwd_deltat")
 
 		# MLE of rationality coefficient
 		self.beta = rospy.get_param("pred/init_beta")
@@ -113,22 +112,20 @@ class HumanPrediction(object):
 
 		# (simulation) start and goal locations
 		self.sim_start = self.real_to_sim_coord(self.real_start)
-		print self.sim_start
 		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
-		self.sim_goals
-
-		#self.real_start = self.sim_to_real_coord(self.sim_start)
-		#self.real_goals = [self.sim_to_real_coord(g) for g in self.sim_goals]
 
 		# tracks the human's state over time
 		self.real_human_traj = None
 		self.sim_human_traj = None
 
-		# set start time to None until get first human state message
-		self.start_t = None
-		self.prev_t = None
-		# get the real-time timestep
-		self.deltat = rospy.get_param("pred/deltat")
+		# store the previous time to compute deltat
+		self.prev_t = rospy.Time.now()
+
+		# get the speed of the human (meters/sec)
+		self.human_vel = rospy.get_param("pred/human_vel")
+
+		# compute the timestep (seconds/cell)
+		self.deltat = self.res/self.human_vel
 
 	#TODO THESE TOPICS SHOULD BE FROM THE YAML/LAUNCH FILE
 	def register_callbacks(self):
@@ -154,14 +151,20 @@ class HumanPrediction(object):
 		Grabs the human's state from the mocap publisher
 		"""
 		curr_time = rospy.Time.now()
+		time_diff = (curr_time - self.prev_t).to_sec()
 
 		# only use measurements of the human every deltat timesteps
-		if self.prev_t is not None and (curr_time - self.prev_t) > self.deltat:
+		if time_diff >= self.deltat:
+			self.prev_t += rospy.Duration.from_sec(self.deltat) 
+
 			# get the human's current state and make sure its always a valid location
 			xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
 
 			# update the map with where the human is at the current time
 			self.update_human_traj(xypose)
+
+			# infer the new human occupancy map from the current state
+			self.infer_occupancies() 
 	
 			# update human pose marker
 			self.marker_pub.publish(self.pose_to_marker(xypose))
@@ -194,8 +197,6 @@ class HumanPrediction(object):
 
 		sim_newstate = self.real_to_sim_coord(newstate)
 
-		#print "newstate: ", newstate
-		#print "sim newstate: ", sim_newstate
 		if self.real_human_traj is None:
 			self.real_human_traj = np.array([newstate])
 			self.sim_human_traj = np.array([sim_newstate])
@@ -205,14 +206,10 @@ class HumanPrediction(object):
 
 			# if the new measured state does not map to the same state in sim, add it
 			# to the simulated trajectory. We need this for the inference to work
-			in_same_state = (sim_newstate == self.sim_human_traj[-1]).all()
-			if not in_same_state:
-				self.sim_human_traj = np.append(self.sim_human_traj, 
-																	np.array([sim_newstate]), 0)
-
-				# if human has moved to new grid location, 
-				# infer the new human occupancy map from the current state
-				self.infer_occupancies() 
+			#in_same_state = (sim_newstate == self.sim_human_traj[-1]).all()
+			#if not in_same_state:
+			self.sim_human_traj = np.append(self.sim_human_traj, 
+															np.array([sim_newstate]), 0)
 
 
 	# TODO we need to have beta updated over time, and have a beta for each goal
@@ -225,13 +222,12 @@ class HumanPrediction(object):
 			print "Can't infer occupancies -- human hasn't appeared yet!"
 			return 
 
-		if len(self.sim_human_traj) < 2:
-			print "Not inferring occupancy -- human hasn't moved from first gridcell yet!"
-			return 
+		#if len(self.sim_human_traj) < 2:
+		#	print "Not inferring occupancy -- human hasn't moved from first gridcell yet!"
+		#	return 
 
-		print self.sim_goals
 		dest_list = [self.gridworld.coor_to_state(g[0], g[1]) for g in self.sim_goals]
-		traj = self.traj_to_state_action()
+		traj = [self.real_to_sim(x, round_vals=False) for x in self.real_human_traj] 
 
 		# returns all state probabilities for timesteps 0,1,...,T in a 2D array. 
 		# (with dimension (T+1) x (height x width)
@@ -239,14 +235,6 @@ class HumanPrediction(object):
 		(self.occupancy_grids, self.betas, self.dest_probs) = inf.state.infer(
 																									self.gridworld, traj, 
 																									dest_list, T=self.fwd_tsteps)
-
-		# TODO THIS IS UNCHECKED
-		# update the beta publisher
-		#beta_msg = Float32()
-		#beta_msg.data = np.amax(self.betas)
-		#self.beta_pub.publish(beta_msg)
-
-		#print "occupancy grid: ", self.occupancy_grids
   
 	# ---- Utility Functions ---- #
 
@@ -318,13 +306,21 @@ class HumanPrediction(object):
 		return [sim_coord[0]*self.res + self.real_lower[0], 
 						self.real_upper[1] - sim_coord[1]*self.res]
 
-	def real_to_sim_coord(self, real_coord):
+	def real_to_sim_coord(self, real_coord, round_vals=True):
 		"""
 		Takes [x,y] coordinate in the ROS real frame, and returns a rotated and 
 		shifted	value in the simulation frame
+		-- round_vals: 
+					True - gives an [i,j] integer-valued grid cell entry.
+					False - gives a floating point value on the grid cell
 		"""
-		return [int(round((real_coord[0] - self.real_lower[0])/self.res)),
-						int(round((self.real_upper[1] - real_coord[1])/self.res))]
+		i_coord = (real_coord[0] - self.real_lower[0])/self.res
+		j_coord = (self.real_upper[1] - real_coord[1])/self.res
+
+		if round_vals:
+			return [int(round(i_coord)), int(round(j_coord))]
+		else:
+			return [i_coord, j_coord]
 
 	def interpolate_grid(self, future_time):
 		"""
@@ -386,16 +382,11 @@ class HumanPrediction(object):
 
 		curr_time = rospy.Time.now()
 
-		# set the start time of the experiment to the time of first occugrid msg
-		if self.start_t is None:
-			self.start_t = curr_time.secs
-			self.prev_t = curr_time
-
 		for t in range(self.fwd_tsteps):
 			grid_msg = ProbabilityGrid()
 
 			# Set up the header.
-			grid_msg.header.stamp = curr_time + rospy.Duration(t*self.fwd_deltat)
+			grid_msg.header.stamp = curr_time + rospy.Duration(t*self.deltat)
 			grid_msg.header.frame_id = "/world"
 
 			# .info is a nav_msgs/MapMetaData message. 

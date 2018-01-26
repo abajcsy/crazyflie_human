@@ -11,9 +11,6 @@ pred:
   sim_width: 26
 
   # Start position of human and list of potential goal locations
-  sim_start: [0, 0] # [7, 25]
-  sim_goals: [[13,25], [25,13]] #[[25, 25], [25, 7]] 
-
   real_start: [-1.049, 0.783] #[-1.988, -1.023]
   real_goals: [[1.650, 0.480], [-0.465, 2.636]]
 
@@ -23,14 +20,14 @@ pred:
   # Num timesteps into the future to predict
   fwd_tsteps: 10
 
-  # Time between each step (in seconds?)
-  fwd_deltat: 1
-
   # Initial rationality coefficient 
   init_beta: 0.5
 
   # Human's height (in meters)
   human_height: 1.67
+
+  # Human's walking speed (m/s) -- human walking speed is 1.4 m/s
+  human_vel: 1.4
 
   # Probability threshold 
   prob_thresh: 0.1
