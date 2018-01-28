@@ -3,14 +3,14 @@
 <launch>
 	<rosparam command="load" file="$(find crazyflie_human)/config/pedestrian_pred.yaml" />
 
-	<!-- simulate human walking around -->
-	<node name="simulate_human" pkg="crazyflie_human" type="sim_human.py" output="screen"/>
+	<!-- simulate human walking around 
+	<node name="simulate_human" pkg="crazyflie_human" type="sim_human.py" output="screen"/>-->
 	
-	<!-- read data from optitrack of human walking around 
-	<node name="human_state_estimator" pkg="crazyflie_human" type="human_state_estimator.py" output="screen"/>-->
+	<!-- read data from optitrack of human walking around -->
+	<node name="human_state_estimator" pkg="crazyflie_human" type="human_state_estimator.py" output="screen"/>
 	
 	<!-- simulate world -->
-	<node name="human_prediction" pkg="crazyflie_human" type="human_pred.py" output="screen"/> -->
+	<node name="human_prediction" pkg="crazyflie_human" type="human_pred.py" output="screen"/> 
 
 	<!-- Start RVIZ 
 	<node pkg="rviz" type="rviz" name="rviz"/>--> 
