@@ -35,16 +35,6 @@ class SimHuman(object):
 		"""
 		Loads all the important paramters of the human sim
 		"""
-		# --- simulation params ---# 
-
-		# start and goal locations 
-		self.sim_start = rospy.get_param("pred/sim_start")
-		self.sim_goals = [[23,23]]#rospy.get_param("pred/sim_goals")  
-
-		# resolution (m/cell)
-		self.res = rospy.get_param("pred/resolution")
-
-		self.human_height = rospy.get_param("pred/human_height")
 
 		# --- real-world params ---# 
 
@@ -58,12 +48,24 @@ class SimHuman(object):
 		self.real_upper = up
 
 		# start and goal locations 
-		self.real_start = self.sim_to_real_coord(self.sim_start)
-		self.real_goal = self.sim_to_real_coord(self.sim_goals[0]) # TODO THIS ONLY WORKS FOR 1 GOAL
+		self.real_start = rospy.get_param("pred/real_start")
+		self.real_goal = rospy.get_param("pred/real_goals")[0]
 
 		self.start_T = rospy.Time.now().secs
 		self.final_T = 30.0
 		self.human_pose = None
+
+		# --- simulation params ---# 
+
+		# resolution (m/cell)
+		self.res = rospy.get_param("pred/resolution")
+
+		self.sim_start = self.sim_to_real_coord(self.real_start) #rospy.get_param("pred/sim_start")
+		self.sim_goals = [[23,23]] #rospy.get_param("pred/sim_goals")  
+
+		self.human_height = rospy.get_param("pred/human_height")
+
+		self.prev_pose = self.real_start
 
 	def register_callbacks(self):
 		"""
@@ -112,15 +114,18 @@ class SimHuman(object):
 			next = np.array(self.real_goal)		
 			ti = 0
 			tf = self.final_T
-			target_pos = (next - prev)*((curr_time-ti)/(tf - ti)) + prev		
+			target_pos = (next - prev)*((curr_time-ti)/(tf - ti)) + prev	
+			# add in gaussian noise
+			noisy_pos = self.prev_pose + np.random.normal(0,self.res, (2,))
+			self.prev_pose = target_pos #(target_pos + noisy_pos)*0.5
 
 		self.human_pose = PoseStamped()
 		self.human_pose.header.frame_id="/frame_id_1"
 		self.human_pose.header.stamp = rospy.Time.now()
 		# set the current timestamp
 		# self.human_pose.header.stamp.secs = curr_time
-		self.human_pose.pose.position.x = target_pos[0]
-		self.human_pose.pose.position.y = target_pos[1]
+		self.human_pose.pose.position.x = self.prev_pose[0]
+		self.human_pose.pose.position.y = self.prev_pose[1]
 		self.human_pose.pose.position.z = 0.0
 
 	def sim_to_real_coord(self, sim_coord):

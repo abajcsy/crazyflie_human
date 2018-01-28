@@ -11,11 +11,11 @@ pred:
   sim_width: 26
 
   # Start position of human and list of potential goal locations
-  sim_start: [0, 0] # [7, 25]
-  sim_goals: [[13,25], [25,13]] #[[25, 25], [25, 7]] 
+  sim_start: [0, 0]
+  sim_goals: [[13,25], [25,13]] 
 
-  real_start: [-1.049, 0.783] #[-1.988, -1.023]
-  real_goals: [[1.650, 0.480], [-0.465, 2.636]]
+  real_start: [1.0,-0.2] #[1.650, -1] 
+  real_goals: [[1.0, 2.0]]
 
   # Resolution, ex. (real meters)/(sim dim-1) (m/cell)
   resolution: 0.1464 

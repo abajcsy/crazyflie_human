@@ -5,9 +5,9 @@ import sys, select, os
 import numpy as np
 import time
 
-from std_msgs.msg import String, Float32
+from std_msgs.msg import String, Float32, ColorRGBA
 from nav_msgs.msg import OccupancyGrid
-from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, Pose2D
+from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, Pose2D, Vector3
 from visualization_msgs.msg import Marker, MarkerArray
 from crazyflie_human.msg import OccupancyGridTime, ProbabilityGrid
 
@@ -155,24 +155,24 @@ class HumanPrediction(object):
 		"""
 		curr_time = rospy.Time.now()
 
-		# only use measurements of the human every deltat timesteps
-		if self.prev_t is not None and (curr_time - self.prev_t) > self.deltat:
-			# get the human's current state and make sure its always a valid location
-			xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
+		# get the human's current state and make sure its always a valid location
+		xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
 
-			# update the map with where the human is at the current time
-			self.update_human_traj(xypose)
-	
-			# update human pose marker
-			self.marker_pub.publish(self.pose_to_marker(xypose))
+		# update the map with where the human is at the current time
+		self.update_human_traj(xypose)
 
-			# publish occupancy grid list
-			if self.occupancy_grids is not None:
-				self.occu_pub.publish(self.grid_to_message())
+		# update human pose marker
+		self.marker_pub.publish(self.pose_to_marker(xypose))
 
-			# TODO THIS IS DEBUG
-			for i in range(1,self.fwd_tsteps):
-				self.visualize_occugrid(i)
+		# publish occupancy grid list
+		if self.occupancy_grids is not None:
+			self.occu_pub.publish(self.grid_to_message())
+
+		# TODO THIS IS DEBUG
+		for i in range(1,self.fwd_tsteps):
+			self.visualize_occugrid(i)
+			rospy.sleep(1.0/30.0)
+
 
 	def make_valid_state(self, xypose):
 		"""
@@ -400,8 +400,8 @@ class HumanPrediction(object):
 
 			# .info is a nav_msgs/MapMetaData message. 
 			grid_msg.resolution = self.res
-			grid_msg.width = self.real_width
-			grid_msg.height = self.real_height
+			grid_msg.width = self.sim_width
+			grid_msg.height = self.sim_height
 
 			# Rotated maps are not supported... 
 			origin_x=0.0 
@@ -451,42 +451,40 @@ class HumanPrediction(object):
 		if self.occupancy_grids is not None:
 			grid = self.interpolate_grid(time)
 		
+			marker = Marker()
+			marker.header.frame_id = "/world"
+			marker.header.stamp = rospy.Time.now()
+			marker.id = 0
+			marker.ns = "visualize" #+ str(time)
+
+			marker.type = marker.CUBE_LIST
+			marker.action = marker.ADD
+
+			marker.scale.x = self.res
+			marker.scale.y = self.res
+			marker.scale.z = self.human_height
+
 			if grid is not None:
 				for i in range(len(grid)):
-					# only visualize if greater than prob thresh
-					if grid[i] > self.prob_thresh:
-						(row, col) = self.gridworld.state_to_coor(i)
-						real_coord = self.sim_to_real_coord([row, col])
+					#if grid[i] > self.prob_thresh:
+					(row, col) = self.gridworld.state_to_coor(i)
+					real_coord = self.sim_to_real_coord([row, col])
 
-						marker = Marker()
-						marker.header.frame_id = "/world"
-						marker.header.stamp = rospy.Time.now()
-						marker.id = i+1
+					color = ColorRGBA()
+					color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
+					color.r = 1
+					color.g = 1 - grid[i] 
+					color.b = grid[i]
+					marker.colors.append(color)
 
-						marker.type = marker.CUBE
-						marker.action = marker.ADD
+					pt = Vector3()
+					pt.x = real_coord[0]
+					pt.y = real_coord[1]
+					pt.z = self.human_height/2.0
+					marker.points.append(pt)
+					
+				self.grid_vis_pub.publish(marker)
 
-						marker.scale.x = self.res
-						marker.scale.y = self.res
-						marker.scale.z = self.human_height*grid[i]
-						marker.color.a = 0.8
-						marker.color.r = 1
-						marker.color.g = 1 - grid[i]
-						marker.color.b = grid[i]
-						if (marker.scale.z < 1e-8):
-							marker.scale.z = 0.001
-							marker.color.a = 0.8
-							marker.color.r = 0
-							marker.color.g = 0.5
-							marker.color.b = 0.7
-				
-						marker.pose.orientation.w = 1
-						marker.pose.position.z = 0
-						marker.pose.position.x = real_coord[0]
-						marker.pose.position.y = real_coord[1]
-						marker.pose.position.z = marker.scale.z/2 
-
-						self.grid_vis_pub.publish(marker)
 
 	def pose_to_marker(self, xypose):
 		"""
