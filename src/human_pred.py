@@ -5,9 +5,9 @@ import sys, select, os
 import numpy as np
 import time
 
-from std_msgs.msg import String, Float32
+from std_msgs.msg import String, Float32, ColorRGBA
 from nav_msgs.msg import OccupancyGrid
-from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, Pose2D
+from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, Pose2D, Vector3
 from visualization_msgs.msg import Marker, MarkerArray
 from crazyflie_human.msg import OccupancyGridTime, ProbabilityGrid
 
@@ -16,6 +16,7 @@ from crazyflie_human.msg import OccupancyGridTime, ProbabilityGrid
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../../")
 
 from pedestrian_prediction.pp.mdp import GridWorldMDP
+from pedestrian_prediction.pp.mdp.expanded import GridWorldExpanded
 from pedestrian_prediction.pp.inference import hardmax as inf
 
 Actions = GridWorldMDP.Actions
@@ -79,9 +80,6 @@ class HumanPrediction(object):
 		# simulation forward prediction parameters
 		self.fwd_tsteps = rospy.get_param("pred/fwd_tsteps")
 
-		# MLE of rationality coefficient
-		self.beta = rospy.get_param("pred/init_beta")
-
 		self.human_height = rospy.get_param("pred/human_height")
 		self.prob_thresh = rospy.get_param("pred/prob_thresh")	
 
@@ -89,10 +87,12 @@ class HumanPrediction(object):
 		self.occupancy_grids = None
 
 		# stores list of beta values for each goal
-		self.betas = None
+		self.betas = rospy.get_param("pred/betas")
+		# stores dest x beta array with posterior prob of each beta
+		self.dest_beta_prob = None
 
 		# grid world representing the experimental environment
-		self.gridworld = GridWorldMDP(self.sim_height, self.sim_width, {}, default_reward=-4)
+		self.gridworld = GridWorldExpanded(self.sim_height, self.sim_width)
 
 		# --- real-world params ---# 
 
@@ -174,8 +174,9 @@ class HumanPrediction(object):
 				self.occu_pub.publish(self.grid_to_message())
 
 			# TODO THIS IS DEBUG
-			for i in range(1,self.fwd_tsteps):
-				self.visualize_occugrid(i)
+			#for i in range(1,self.fwd_tsteps):
+			#	self.visualize_occugrid(i)
+			#	rospy.sleep(0.1)
 
 	def make_valid_state(self, xypose):
 		"""
@@ -185,7 +186,7 @@ class HumanPrediction(object):
 		Else if human is NOT valid, then clips the human's pose to a valid location
 		"""
 		valid_xypose = [np.clip(xypose[0], self.real_lower[0], self.real_upper[0]),
-										np.clip(xypose[1], self.real_lower[1], self.real_upper[1])]		
+							np.clip(xypose[1], self.real_lower[1], self.real_upper[1])]		
 
 		return valid_xypose
 
@@ -202,14 +203,14 @@ class HumanPrediction(object):
 			self.sim_human_traj = np.array([sim_newstate])
 		else:
 			self.real_human_traj = np.append(self.real_human_traj, 
-																np.array([newstate]), 0)
+												np.array([newstate]), 0)
 
 			# if the new measured state does not map to the same state in sim, add it
 			# to the simulated trajectory. We need this for the inference to work
 			#in_same_state = (sim_newstate == self.sim_human_traj[-1]).all()
 			#if not in_same_state:
 			self.sim_human_traj = np.append(self.sim_human_traj, 
-															np.array([sim_newstate]), 0)
+											np.array([sim_newstate]), 0)
 
 
 	# TODO we need to have beta updated over time, and have a beta for each goal
@@ -227,15 +228,17 @@ class HumanPrediction(object):
 		#	return 
 
 		dest_list = [self.gridworld.coor_to_state(g[0], g[1]) for g in self.sim_goals]
-		traj = [self.real_to_sim(x, round_vals=False) for x in self.real_human_traj] 
+		traj = [self.real_to_sim_coord(x, round_vals=False) for x in self.real_human_traj] 
 
 		# returns all state probabilities for timesteps 0,1,...,T in a 2D array. 
 		# (with dimension (T+1) x (height x width)
 		# verbose_return=True --> (occupancy grid, betas, dest_probs)
-		(self.occupancy_grids, self.betas, self.dest_probs) = inf.state.infer(
-																									self.gridworld, traj, 
-																									dest_list, T=self.fwd_tsteps)
+		#(self.occupancy_grids, self.betas, self.dest_probs) = 
+		#	inf.state.infer(self.gridworld, traj, dest_list, T=self.fwd_tsteps)
   
+		(self.occupancy_grids, self.beta_occu, self.dest_beta_prob) = inf.state.infer_joint(self.gridworld, 
+			dest_list, self.betas, T=self.fwd_tsteps, use_gridless=True, traj=traj, verbose_return=True)
+
 	# ---- Utility Functions ---- #
 
 	def traj_to_state_action(self):
@@ -391,8 +394,8 @@ class HumanPrediction(object):
 
 			# .info is a nav_msgs/MapMetaData message. 
 			grid_msg.resolution = self.res
-			grid_msg.width = self.real_width
-			grid_msg.height = self.real_height
+			grid_msg.width = self.sim_width
+			grid_msg.height = self.sim_height
 
 			# Rotated maps are not supported... 
 			origin_x=0.0 
@@ -442,42 +445,39 @@ class HumanPrediction(object):
 		if self.occupancy_grids is not None:
 			grid = self.interpolate_grid(time)
 		
+			marker = Marker()
+			marker.header.frame_id = "/world"
+			marker.header.stamp = rospy.Time.now()
+			marker.id = 0
+			marker.ns = "visualize" #+ str(time)
+
+			marker.type = marker.CUBE_LIST
+			marker.action = marker.ADD
+
+			marker.scale.x = self.res
+			marker.scale.y = self.res
+			marker.scale.z = self.human_height
+
 			if grid is not None:
 				for i in range(len(grid)):
-					# only visualize if greater than prob thresh
-					if grid[i] > self.prob_thresh:
-						(row, col) = self.gridworld.state_to_coor(i)
-						real_coord = self.sim_to_real_coord([row, col])
+					#if grid[i] > self.prob_thresh:
+					(row, col) = self.gridworld.state_to_coor(i)
+					real_coord = self.sim_to_real_coord([row, col])
 
-						marker = Marker()
-						marker.header.frame_id = "/world"
-						marker.header.stamp = rospy.Time.now()
-						marker.id = i+1
+					color = ColorRGBA()
+					color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
+					color.r = 1
+					color.g = 1 - grid[i] 
+					color.b = grid[i]
+					marker.colors.append(color)
 
-						marker.type = marker.CUBE
-						marker.action = marker.ADD
-
-						marker.scale.x = self.res
-						marker.scale.y = self.res
-						marker.scale.z = self.human_height*grid[i]
-						marker.color.a = 0.8
-						marker.color.r = 1
-						marker.color.g = 1 - grid[i]
-						marker.color.b = grid[i]
-						if (marker.scale.z < 1e-8):
-							marker.scale.z = 0.001
-							marker.color.a = 0.8
-							marker.color.r = 0
-							marker.color.g = 0.5
-							marker.color.b = 0.7
-				
-						marker.pose.orientation.w = 1
-						marker.pose.position.z = 0
-						marker.pose.position.x = real_coord[0]
-						marker.pose.position.y = real_coord[1]
-						marker.pose.position.z = marker.scale.z/2 
-
-						self.grid_vis_pub.publish(marker)
+					pt = Vector3()
+					pt.x = real_coord[0]
+					pt.y = real_coord[1]
+					pt.z = self.human_height/2.0
+					marker.points.append(pt)
+					
+				self.grid_vis_pub.publish(marker)
 
 	def pose_to_marker(self, xypose):
 		"""
