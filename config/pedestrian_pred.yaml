@@ -1,3 +1,7 @@
+# planner
+#   roslaunch meta_planner coffee.launch prob_thresh:=0.01 collision_check_resolution:=0.33 grid_resolution:=0.33 > debug.txt
+# simulation
+#   roslaunch crazyflie_human sim.launch exp:=coffee beta:=irrational file:="coffee/sylvia_nocoffee"
 state:
 
   # Upper and lower bounds for experimental space (meters). [x, y, z]
@@ -12,18 +16,15 @@ pred:
 
   # Start position of human and list of potential goal locations
   # 
-  # Exp. 1) side-by-side robot and human:
-  #   real_start [1.4,-0.2]
-  #   real_goals: [[1.4,2.0]]
-
-  real_start: [1.61,-1.02]
-  real_goals: [[-0.52, 2.60]] #[-2.0, 0.78]]
-
-  #real_start: [-1.049, 0.783] #[-1.988, -1.023]
-  #real_goals: [[1.650, 0.480]] #[-0.465, 2.636]]
-
-  # robot_start: [-1.069,-0.713, 2.0]
-  # robot_goal: [1.33, 2.26]
+  # TRIANGLE EXPERIMENT
+  triangle_real_start: [1.61,-1.02]
+  triangle_real_goals: [[-0.17, 2.60], [-2.0, 0.78]]
+  
+  # COFFEE EXPERIMENT
+  #   real_start: [1.61,-1.02]
+  #   real_goals: [[-0.17, 2.60]]
+  coffee_real_start: [1.61,-1.02]
+  coffee_real_goals: [[-0.17, 2.60]]
 
   # Resolution, ex. (real meters)/(sim dim-1) (m/cell)
   resolution: 0.1464 
@@ -31,15 +32,16 @@ pred:
   # Num timesteps into the future to predict
   fwd_tsteps: 10
 
-  # Initial betas 
-  betas: [0.1, 0.3, 1.0, 3.0, 10.0]
-  #betas: [0.05]
+  # Initial betas depending on model
+  beta_adaptive: [0.1, 0.3, 1.0, 3.0, 10.0]
+  beta_rational: [0.05]
+  beta_irrational: [10.0]
 
   # Human's height (in meters)
   human_height: 1.67
 
   # Human's walking speed (m/s) -- human walking speed is 1.4 m/s
-  human_vel: 1.4
+  human_vel: 0.7 
 
   # Probability threshold 
-  prob_thresh: 0.25
+  prob_thresh: 0.01

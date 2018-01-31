@@ -1,7 +1,22 @@
 <?xml version="1.0"?>
 
 <launch>
+
 	<rosparam command="load" file="$(find crazyflie_human)/config/pedestrian_pred.yaml" />
+
+	<!-- denotes which experimental setup we are running:  
+		- coffee: one goal
+		- triangle: two goals				
+	-->
+	<arg name="exp" default="coffee" />
+
+	<!-- denotes which human model we are using:
+		- irrational, rational, adaptive	
+	-->
+	<arg name="beta" default="adaptive" />
+
+	<param name="exp" value="$(arg exp)" />
+	<param name="beta" value="$(arg beta)" />
 
 	<!-- simulate human walking around 
 	<node name="simulate_human" pkg="crazyflie_human" type="sim_human.py" output="screen"/> -->
@@ -15,7 +30,9 @@
 	<!-- visualize occupancy grids -->
 	<node name="prediction_visualizer" pkg="crazyflie_human" type="prediction_visualizer.py" output="screen"/> 
 
-	<!-- Start RVIZ 
-	<node pkg="rviz" type="rviz" name="rviz"/>--> 
+	<!-- play rosbag of human data -->
+	<arg name="path" default="/home/abajcsy/GitHub/human_estimator/src/crazyflie_human/data/" />
+	<arg name="file" default="triangle/sylvia" />
+	<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg path)$(arg file).bag"/>
 
 </launch>

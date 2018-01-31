@@ -69,7 +69,7 @@ class HumanPrediction(object):
 		Loads all the important paramters of the human sim
 		"""
 		# --- simulation params ---# 
-
+		
 		# measurements of gridworld
 		self.sim_height = int(rospy.get_param("pred/sim_height"))
 		self.sim_width = int(rospy.get_param("pred/sim_width"))
@@ -87,7 +87,16 @@ class HumanPrediction(object):
 		self.occupancy_grids = None
 
 		# stores list of beta values for each goal
-		self.betas = rospy.get_param("pred/betas")
+		self.beta_model = rospy.get_param("beta")
+		if self.beta_model == "irrational":
+			self.betas = rospy.get_param("pred/beta_irrational")
+		elif self.beta_model == "rational":
+			self.betas = rospy.get_param("pred/beta_rational")
+		elif self.beta_model == "adaptive":
+			self.betas = rospy.get_param("pred/beta_adaptive")
+		else:
+			rospy.signal_shutdown("Beta model type is not valid!")
+		
 		# stores dest x beta array with posterior prob of each beta
 		self.dest_beta_prob = None
 
@@ -106,9 +115,18 @@ class HumanPrediction(object):
 		self.real_lower = low
 		self.real_upper = up
 
+		# get which experimental setup we are in
+		self.exp = rospy.get_param("exp")
+
 		# (real-world) start and goal locations 
-		self.real_start = rospy.get_param("pred/real_start") 
-		self.real_goals = rospy.get_param("pred/real_goals")
+		if self.exp == "coffee":
+			self.real_start = rospy.get_param("pred/coffee_real_start") 
+			self.real_goals = rospy.get_param("pred/coffee_real_goals")
+		elif self.exp == "triangle":
+			self.real_start = rospy.get_param("pred/triangle_real_start") 
+			self.real_goals = rospy.get_param("pred/triangle_real_goals")
+		else:
+			rospy.signal_shutdown("Experiment type is not valid!")
 
 		# (simulation) start and goal locations
 		self.sim_start = self.real_to_sim_coord(self.real_start)
@@ -126,6 +144,13 @@ class HumanPrediction(object):
 
 		# compute the timestep (seconds/cell)
 		self.deltat = self.res/self.human_vel
+
+		# TODO This is for debugging.
+		print "----- Running prediction for: -----"
+		print "	- experiment: ", self.exp
+		print "	- beta model: ", self.beta_model
+		print "	- prob thresh: ", self.prob_thresh
+		print "-----------------------------------"
 
 	#TODO THESE TOPICS SHOULD BE FROM THE YAML/LAUNCH FILE
 	def register_callbacks(self):
@@ -173,11 +198,6 @@ class HumanPrediction(object):
 			if self.occupancy_grids is not None:
 				self.occu_pub.publish(self.grid_to_message())
 
-			# TODO THIS IS DEBUG
-			#for i in range(1,self.fwd_tsteps):
-			#	self.visualize_occugrid(i)
-			#	rospy.sleep(0.1)
-
 	def make_valid_state(self, xypose):
 		"""
 		Takes human state measurement, checks if its inside of the world grid, and 
@@ -185,6 +205,7 @@ class HumanPrediction(object):
 		If human is in valid [x,y] grid location, returns original xypose
 		Else if human is NOT valid, then clips the human's pose to a valid location
 		"""
+
 		valid_xypose = [np.clip(xypose[0], self.real_lower[0], self.real_upper[0]),
 							np.clip(xypose[1], self.real_lower[1], self.real_upper[1])]		
 
@@ -307,7 +328,7 @@ class HumanPrediction(object):
 		shifted	value in the ROS coordinates
 		"""
 		return [sim_coord[0]*self.res + self.real_lower[0], 
-						self.real_upper[1] - sim_coord[1]*self.res]
+				self.real_upper[1] - sim_coord[1]*self.res]
 
 	def real_to_sim_coord(self, real_coord, round_vals=True):
 		"""
@@ -317,11 +338,18 @@ class HumanPrediction(object):
 					True - gives an [i,j] integer-valued grid cell entry.
 					False - gives a floating point value on the grid cell
 		"""
-		i_coord = (real_coord[0] - self.real_lower[0])/self.res
-		j_coord = (self.real_upper[1] - real_coord[1])/self.res
+		if round_vals:
+			x = round((real_coord[0] - self.real_lower[0])/self.res)
+			y = round((self.real_upper[1] - real_coord[1])/self.res)
+		else:
+			x = (real_coord[0] - self.real_lower[0])/self.res
+			y = (self.real_upper[1] - real_coord[1])/self.res
+
+		i_coord = np.minimum(self.sim_height-1, np.maximum(0.0,x));
+		j_coord = np.minimum(self.sim_width-1, np.maximum(0.0,y));
 
 		if round_vals:
-			return [int(round(i_coord)), int(round(j_coord))]
+			return [int(i_coord), int(j_coord)]
 		else:
 			return [i_coord, j_coord]
 
@@ -436,48 +464,6 @@ class HumanPrediction(object):
 		marker.pose.position.y = xy[1]
 
 		return marker
-
-	def visualize_occugrid(self, time):
-		"""
-		Visualizes occupancy grid at time
-		"""
-
-		if self.occupancy_grids is not None:
-			grid = self.interpolate_grid(time)
-		
-			marker = Marker()
-			marker.header.frame_id = "/world"
-			marker.header.stamp = rospy.Time.now()
-			marker.id = 0
-			marker.ns = "visualize" #+ str(time)
-
-			marker.type = marker.CUBE_LIST
-			marker.action = marker.ADD
-
-			marker.scale.x = self.res
-			marker.scale.y = self.res
-			marker.scale.z = self.human_height
-
-			if grid is not None:
-				for i in range(len(grid)):
-					#if grid[i] > self.prob_thresh:
-					(row, col) = self.gridworld.state_to_coor(i)
-					real_coord = self.sim_to_real_coord([row, col])
-
-					color = ColorRGBA()
-					color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
-					color.r = 1
-					color.g = 1 - grid[i] 
-					color.b = grid[i]
-					marker.colors.append(color)
-
-					pt = Vector3()
-					pt.x = real_coord[0]
-					pt.y = real_coord[1]
-					pt.z = self.human_height/2.0
-					marker.points.append(pt)
-					
-				self.grid_vis_pub.publish(marker)
 
 	def pose_to_marker(self, xypose):
 		"""

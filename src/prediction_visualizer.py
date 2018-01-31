@@ -128,8 +128,10 @@ class PredictionVisualizer(object):
 					color = ColorRGBA()
 					color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
 					color.r = 1
-					color.g = 1 - grid[i] 
-					color.b = grid[i]
+					color.g = np.minimum(np.log(1 - grid[i]),5)/5
+					color.b = np.minimum(np.log(grid[i]),5)/5
+					if grid[i] < self.prob_thresh:
+						color.a = 0.0
 					marker.colors.append(color)
 
 					pt = Vector3()
@@ -142,6 +144,7 @@ class PredictionVisualizer(object):
 					#print "coord prob: ", grid[i]
 					
 				self.grid_vis_pub.publish(marker)
+
 
 	def state_to_coor(self, state):
 		"""
