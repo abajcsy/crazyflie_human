@@ -30,8 +30,9 @@
 	<!-- visualize occupancy grids -->
 	<node name="prediction_visualizer" pkg="crazyflie_human" type="prediction_visualizer.py" output="screen"/> 
 
-	<!-- play rosbag of human data 
-	<arg name="path" default="$(find crazyflie_human)/data" />
+	<!-- play rosbag of human data -->
+	<arg name="path" default="/home/abajcsy/GitHub/human_estimator/src/crazyflie_human/data/" />
 	<arg name="file" default="sylvia" />
-    <node pkg="rosbag" type="play" name="player" output="screen" args="$(arg path)/$(arg exp)/$(arg file).bag" />-->
+	<node pkg="rosbag" type="play" name="player" output="screen" args="$(arg path)$(arg exp)/$(arg file).bag"/>
+
 </launch>

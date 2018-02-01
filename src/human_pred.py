@@ -141,7 +141,7 @@ class HumanPrediction(object):
 		self.sim_human_traj = None
 
 		# store the previous time to compute deltat
-		self.prev_t = rospy.Time.now()
+		self.prev_t = None
 		self.prev_pos = None
 
 		# get the speed of the human (meters/sec)
@@ -181,16 +181,24 @@ class HumanPrediction(object):
 		Grabs the human's state from the mocap publisher
 		"""
 		curr_time = rospy.Time.now()
-		time_diff = (curr_time - self.prev_t).to_sec()
-
 		xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
+
+		# if this is the first human state message, just record the time and pose
+		if self.prev_t is None:
+			self.prev_t = curr_time
+			self.prev_pos = xypose	
+			self.update_human_traj(xypose)
+			return 
+	
+		time_diff = (curr_time - self.prev_t).to_sec()
 
 		# only use measurements of the human every deltat timesteps
 		if time_diff >= self.deltat:
+
 			self.prev_t += rospy.Duration.from_sec(self.deltat) 
 
 			# get the human's current state and make sure its always a valid location
-			xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
+			#xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
 
 			# update the map with where the human is at the current time
 			self.update_human_traj(xypose)
@@ -204,6 +212,14 @@ class HumanPrediction(object):
 			# publish occupancy grid list
 			if self.occupancy_grids is not None:
 				self.occu_pub.publish(self.grid_to_message())
+
+			# adjust the deltat based on the observed measurements
+			if self.prev_pos is not None:
+				self.human_vel = np.linalg.norm((np.array(xypose) - np.array(self.prev_pos)))/time_diff
+				self.deltat = np.minimum(np.maximum(self.res/self.human_vel,0.05),0.2)
+
+			self.prev_pos = xypose	
+			
 
 	def make_valid_state(self, xypose):
 		"""
