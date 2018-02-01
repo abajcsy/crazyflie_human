@@ -7,7 +7,7 @@ import matplotlib.cbook as cbook
 
 if __name__ == '__main__':
 
-	path = '/home/abajcsy/GitHub/meta_fastrack/ros/src/data_logger/data'
+	path = '/home/abajcsy/GitHub/meta_fastrack/ros/src/data_logger/data/coffee'
 
 	adapt_safe = np.array([None]*16)
 	adapt_eff = np.array([None]*16)
@@ -18,7 +18,7 @@ if __name__ == '__main__':
 	ai = 0; ri = 0; ii = 0
 
 	for filename in os.listdir(path):
-		if "coffee" in filename and "metrics" in filename and "p0" not in filename:
+		if "metrics" in filename and "p0" not in filename:
 			with open(path+"/"+filename) as f:
 				line = f.readlines()[0]
 	        	data = line.split(" ")
