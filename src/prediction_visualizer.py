@@ -81,13 +81,15 @@ class PredictionVisualizer(object):
 
 
 		# show the forward prediction
-		for i in range(1,self.fwd_tsteps):
+		#for i in range(1,5):
 		#	curr_time = rospy.Time.now()
 		#	diff_t = (curr_time - self.prev_t).to_sec()
 		#	if (diff_t >= self.visualization_delta):
 		#		self.prev_t += rospy.Duration.from_sec(self.visualization_delta)
-			self.visualize_occugrid(i)
-			#rospy.sleep(1.0/30.0)
+
+		# show fwd_tsteps
+		self.visualize_occugrid(self.fwd_tsteps)
+		#rospy.sleep(1.0/30.0)
 
 	def from_ROSMsg(self, msg):
 		"""
@@ -105,8 +107,6 @@ class PredictionVisualizer(object):
 		"""
 
 		if self.occupancy_grids is not None:
-			grid = self.interpolate_grid(time)
-		
 			marker = Marker()
 			marker.header.frame_id = "/world"
 			marker.header.stamp = rospy.Time.now()
@@ -119,31 +119,33 @@ class PredictionVisualizer(object):
 			marker.scale.x = self.res
 			marker.scale.y = self.res
 			marker.scale.z = self.human_height
+			for t in range(time):
+				grid = self.interpolate_grid(t)
 
-			if grid is not None:
-				for i in range(len(grid)):
-					(row, col) = self.state_to_coor(i)
-					real_coord = self.sim_to_real_coord([row, col])
+				if grid is not None:
+					for i in range(len(grid)):
+						(row, col) = self.state_to_coor(i)
+						real_coord = self.sim_to_real_coord([row, col])
 
-					color = ColorRGBA()
-					color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
-					color.r = 1
-					color.g = np.minimum(np.log(1 - grid[i]),5)/5
-					color.b = np.minimum(np.log(grid[i]),5)/5
-					if grid[i] < self.prob_thresh:
-						color.a = 0.0
-					marker.colors.append(color)
+						color = ColorRGBA()
+						color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
+						color.r = np.sqrt(grid[i])
+						color.g = np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0
+						color.b = 0.9*np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0 + 0.5*np.sqrt(grid[i])
+						if grid[i] < self.prob_thresh:
+							color.a = 0.0
+						marker.colors.append(color)
 
-					pt = Vector3()
-					pt.x = real_coord[0]
-					pt.y = real_coord[1]
-					pt.z = self.human_height/2.0
-					marker.points.append(pt)
+						pt = Vector3()
+						pt.x = real_coord[0]
+						pt.y = real_coord[1]
+						pt.z = self.human_height/2.0
+						marker.points.append(pt)
 
 					#print "real_coord: ", real_coord
 					#print "coord prob: ", grid[i]
 					
-				self.grid_vis_pub.publish(marker)
+			self.grid_vis_pub.publish(marker)
 
 
 	def state_to_coor(self, state):

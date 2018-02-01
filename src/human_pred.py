@@ -59,7 +59,7 @@ class HumanPrediction(object):
 				break
 
 			# plot start/goal markers for visualization
-			self.start_pub.publish(self.state_to_marker(xy=self.real_start, color="G"))
+			# self.start_pub.publish(self.state_to_marker(xy=self.real_start, color="G"))
 			self.goal_pub.publish(marker_array)
 
 			rate.sleep()
@@ -138,6 +138,7 @@ class HumanPrediction(object):
 
 		# store the previous time to compute deltat
 		self.prev_t = rospy.Time.now()
+		self.prev_pos = None
 
 		# get the speed of the human (meters/sec)
 		self.human_vel = rospy.get_param("pred/human_vel")
@@ -177,6 +178,8 @@ class HumanPrediction(object):
 		"""
 		curr_time = rospy.Time.now()
 		time_diff = (curr_time - self.prev_t).to_sec()
+
+		xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
 
 		# only use measurements of the human every deltat timesteps
 		if time_diff >= self.deltat:
@@ -478,9 +481,11 @@ class HumanPrediction(object):
 		marker.pose.position.z = 0.1
 		marker.scale.x = self.res
 		marker.scale.y = self.res
-		marker.scale.z = self.human_height
+		marker.scale.z = self.human_height + 0.001
 		marker.color.a = 1.0
-		marker.color.r = 1.0
+		marker.color.r = 0.0
+		marker.color.g = 0.0
+		marker.color.b = 0.0
 
 		if xypose is not None:
 			marker.pose.position.x = xypose[0] 
