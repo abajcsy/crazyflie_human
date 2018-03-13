@@ -87,9 +87,12 @@ class PredictionVisualizer(object):
 		#	if (diff_t >= self.visualization_delta):
 		#		self.prev_t += rospy.Duration.from_sec(self.visualization_delta)
 
-		# show fwd_tsteps
-		self.visualize_occugrid(self.fwd_tsteps)
-		#rospy.sleep(1.0/30.0)
+		# show fixed block of fwd_tsteps
+		#self.visualize_occugrid(self.fwd_tsteps)
+
+		# show waves
+		for time in range(self.fwd_tsteps):
+			self.visualize_waves(time)
 
 	def from_ROSMsg(self, msg):
 		"""
@@ -103,7 +106,7 @@ class PredictionVisualizer(object):
 
 	def visualize_occugrid(self, time):
 		"""
-		Visualizes occupancy grid at time
+		Visualizes occupancy grid for all grids in time
 		"""
 
 		if self.occupancy_grids is not None:
@@ -144,6 +147,52 @@ class PredictionVisualizer(object):
 
 					#print "real_coord: ", real_coord
 					#print "coord prob: ", grid[i]
+					
+			self.grid_vis_pub.publish(marker)
+
+	def visualize_waves(self, time):
+		"""
+		Visualizes occupancy grid at time
+		"""
+
+		if self.occupancy_grids is not None:
+			marker = Marker()
+			marker.header.frame_id = "/world"
+			marker.header.stamp = rospy.Time.now()
+			marker.id = 0
+			marker.ns = "visualize"
+
+			marker.type = marker.CUBE_LIST
+			marker.action = marker.ADD
+
+			marker.scale.x = self.res
+			marker.scale.y = self.res
+			marker.scale.z = self.human_height
+
+			grid = self.interpolate_grid(time)
+
+			if grid is not None:
+				for i in range(len(grid)):
+					(row, col) = self.state_to_coor(i)
+					real_coord = self.sim_to_real_coord([row, col])
+
+					color = ColorRGBA()
+					color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
+					color.r = np.sqrt(grid[i])
+					color.g = np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0
+					color.b = 0.9*np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0 + 0.5*np.sqrt(grid[i])
+					if grid[i] < self.prob_thresh:
+						color.a = 0.0
+					marker.colors.append(color)
+
+					pt = Vector3()
+					pt.x = real_coord[0]
+					pt.y = real_coord[1]
+					pt.z = self.human_height/2.0
+					marker.points.append(pt)
+
+				#print "real_coord: ", real_coord
+				#print "coord prob: ", grid[i]
 					
 			self.grid_vis_pub.publish(marker)
 
