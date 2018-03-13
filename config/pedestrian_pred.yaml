@@ -45,3 +45,7 @@ pred:
 
   # Probability threshold 
   prob_thresh: 0.01
+
+  # Process noise (epsilon-stubborn model)
+  epsilon_dest: 0.02
+  epsilon_beta: 0.02

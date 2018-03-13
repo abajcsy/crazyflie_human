@@ -83,6 +83,10 @@ class HumanPrediction(object):
 		self.human_height = rospy.get_param("pred/human_height")
 		self.prob_thresh = rospy.get_param("pred/prob_thresh")	
 
+		# resolution (m/cell)
+		self.epsilon_dest = rospy.get_param("pred/epsilon_dest")
+		self.epsilon_beta = rospy.get_param("pred/epsilon_beta")
+
 		# stores 2D array of size (fwd_tsteps) x (height x width) of probabilities
 		self.occupancy_grids = None
 
@@ -260,8 +264,16 @@ class HumanPrediction(object):
 		#(self.occupancy_grids, self.betas, self.dest_probs) = 
 		#	inf.state.infer(self.gridworld, traj, dest_list, T=self.fwd_tsteps)
   
+  		# The line below feeds in the entire human traj history so far
+  		# and does a single bulk Bayesian inference step.
+		# (self.occupancy_grids, self.beta_occu, self.dest_beta_prob) = inf.state.infer_joint(self.gridworld, 
+		# 	dest_list, self.betas, T=self.fwd_tsteps, use_gridless=True, traj=traj, verbose_return=True)
+
+		# The line below feeds in the last human (s,a) pair and previous posterior
+		# and does a recursive Bayesian update.
 		(self.occupancy_grids, self.beta_occu, self.dest_beta_prob) = inf.state.infer_joint(self.gridworld, 
-			dest_list, self.betas, T=self.fwd_tsteps, use_gridless=True, traj=traj, verbose_return=True)
+			dest_list, self.betas, T=self.fwd_tsteps, use_gridless=True, priors=self.dest_beta_prob,
+			traj=traj[-2:], epsilon_dest=self.epsilon_dest, epsilon_beta=self.epsilon_beta, verbose_return=True)
 
 	# ---- Utility Functions ---- #
 
