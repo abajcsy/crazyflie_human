@@ -3,3 +3,4 @@
 # Each grid cell represents the probability of occupancy
 
 ProbabilityGrid[] gridarray
+int32 object_num

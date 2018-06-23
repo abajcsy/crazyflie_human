@@ -30,10 +30,13 @@ class HumanPrediction(object):
 		- moving obstacle representing human future motion
 	"""
 
-	def __init__(self):
+	def __init__(self, human_number=""):
 
 		# create ROS node
 		rospy.init_node('human_prediction', anonymous=True)
+
+		# store which human occu grid we are computing
+		self.human_number = human_number
 
 		# load all the prediction params and setup subscriber/publishers
 		self.load_parameters()
@@ -54,9 +57,9 @@ class HumanPrediction(object):
 		rate = rospy.Rate(100) 
 
 		while not rospy.is_shutdown():
-			if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-				line = raw_input()
-				break
+			#if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+			#	line = raw_input()
+			#	break
 
 			# plot start/goal markers for visualization
 			# self.start_pub.publish(self.state_to_marker(xy=self.real_start, color="G"))
@@ -83,7 +86,7 @@ class HumanPrediction(object):
 		self.human_height = rospy.get_param("pred/human_height")
 		self.prob_thresh = rospy.get_param("pred/prob_thresh")	
 
-		# resolution (m/cell)
+		# hidden state volatility in HMM
 		self.epsilon_dest = rospy.get_param("pred/epsilon_dest")
 		self.epsilon_beta = rospy.get_param("pred/epsilon_beta")
 
@@ -123,6 +126,7 @@ class HumanPrediction(object):
 		self.exp = rospy.get_param("exp")
 
 		# (real-world) start and goal locations 
+		# TODO: THIS ISNT ACTUALLY USED, ITS JUST FOR SANITY CHECKING
 		if self.exp == "coffee":
 			self.real_start = rospy.get_param("pred/coffee_real_start") 
 			self.real_goals = rospy.get_param("pred/coffee_real_goals")
@@ -163,16 +167,20 @@ class HumanPrediction(object):
 		Sets up all the publishers/subscribers needed.
 		"""
 		# subscribe to the info of the human walking around the space
-		self.human_sub = rospy.Subscriber('/human_pose', PoseStamped, 
+		self.human_sub = rospy.Subscriber('/human_pose'+self.human_number, PoseStamped, 
 											self.human_state_callback, queue_size=1)
 
 		# occupancy grid publisher & small publishers for visualizing the start/goal
-		self.occu_pub = rospy.Publisher('/occupancy_grid_time', OccupancyGridTime, queue_size=1)
-		self.beta_pub = rospy.Publisher('/beta_topic', Float32, queue_size=1)
+		self.occu_pub = rospy.Publisher('/occupancy_grid_time'+self.human_number, 
+			OccupancyGridTime, queue_size=1)
+		self.beta_pub = rospy.Publisher('/beta_topic'+self.human_number, 
+			Float32, queue_size=1)
 		self.goal_pub = rospy.Publisher('/goal_markers', MarkerArray, queue_size=10)
 		self.start_pub = rospy.Publisher('/start_marker', Marker, queue_size=10)
-		self.grid_vis_pub = rospy.Publisher('/occu_grid_marker', Marker, queue_size=10)
-		self.marker_pub = rospy.Publisher('/human_marker', Marker, queue_size=10)
+		self.grid_vis_pub = rospy.Publisher('/occu_grid_marker'+self.human_number, 
+			Marker, queue_size=10)
+		self.marker_pub = rospy.Publisher('/human_marker'+self.human_number, 
+			Marker, queue_size=10)
 
 	# ---- Inference Functionality ---- #
 
@@ -441,6 +449,7 @@ class HumanPrediction(object):
 		"""
 		timed_grid = OccupancyGridTime()
 		timed_grid.gridarray = [None]*self.fwd_tsteps
+		timed_grid.object_num = int(self.human_number) if self.human_number is not "" else 0
 
 		curr_time = rospy.Time.now()
 
