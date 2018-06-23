@@ -7,7 +7,7 @@ import sys
 
 if __name__ == '__main__':
 	if len(sys.argv) < 2:
-		human_num = 1
+		human_num = "1"
 		print "human_state_estimator: no human_num arg specified. Setting human_num = 1."
 	else:
 		human_num = sys.argv[1]

@@ -6,6 +6,7 @@ import numpy as np
 import time
 import copy
 
+from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, Pose2D, Vector3
 from nav_msgs.msg import OccupancyGrid
 from crazyflie_human.msg import OccupancyGridTime, ProbabilityGrid
 
@@ -88,12 +89,13 @@ class MultiHumanPrediction(object):
 		# occupancy grid publisher & small publishers for visualizing the start/goal
 		self.occu_pub = rospy.Publisher('/occupancy_grid_time', OccupancyGridTime, queue_size=1)
 
-
 	def human_grid_callback(self, msg):
 		"""
-		Takes a human grid callback and performs the noisy-OR
+		Takes a human grid callback and stores it 
 		"""
 
+		print "got human grid callback: ", msg.object_num
+		print "timestamp: ", msg.gridarray[0].header.stamp
 		# human num takes values 1 --> NUM_HUMAN
 		# but if no human_num is provided, make sure to index right
 		if msg.object_num == 0:
@@ -101,16 +103,17 @@ class MultiHumanPrediction(object):
 		else: 
 			self.all_occu_grids[msg.object_num-1] = msg.gridarray
 
-
 	def update_noisyOR_grid(self):
 		"""
 		Update final gird with noisyOR of all the human grids
 		"""
 
 		# sanity check before we have gotten any messages
-		if self.all_occu_grids is None or self.all_occu_grids[0] is None:
+		if self.all_occu_grids is None:
 			return
 
+		#print "none all_occu_grids? ", (self.all_occu_grids is None)
+		#print "none all_occu_grids[0]? ", (self.all_occu_grids[0] is None)
 		curr_time = rospy.Time.now()
 		all_grids_copy = copy.deepcopy(self.all_occu_grids)
 		grid_len = self.sim_height*self.sim_width
@@ -119,22 +122,23 @@ class MultiHumanPrediction(object):
 		noisyOR_grid = np.array([[0.0]*grid_len]*self.fwd_tsteps)
 
 		for occu_grid in all_grids_copy:
-			grid_time = occu_grid[0].header.stamp
+			if occu_grid is not None:
+				grid_time = occu_grid[0].header.stamp
 
-			# shift old data to align
-			if grid_time < curr_time - self.deltat:
-				d = floor((curr_time - grid_time)/self.deltat)
-				for k in range(self.fwd_tsteps-d-1):
-					occu_grid[k].data = occu_grid[k+d].data
-				for k in range(self.fwd_tsteps-d, self.fwd_tsteps-1):
-					occu_grid[k].data = [0.0]*grid_len
+				# shift old data to align
+				if grid_time.to_sec() < (curr_time.to_sec() - self.deltat):
+					d = floor((curr_time - grid_time)/self.deltat)
+					for k in range(self.fwd_tsteps-d-1):
+						occu_grid[k].data = occu_grid[k+d].data
+					for k in range(self.fwd_tsteps-d, self.fwd_tsteps-1):
+						occu_grid[k].data = [0.0]*grid_len
 
-			occu_grid_data = np.array([[0.0]*grid_len]*self.fwd_tsteps)
-			for k in self.fwd_tsteps:
-				occu_grid_data[k] = occu_grid[k].data
+				occu_grid_data = np.array([[0.0]*grid_len]*self.fwd_tsteps)
+				for k in range(self.fwd_tsteps):
+					occu_grid_data[k] = occu_grid[k].data
 
-			# accumulate the noisy-NOR
-			noisyNOR_grid = noisyNOR_grid*(1 - np.array(occu_grid_data))
+				# accumulate the noisy-NOR
+				noisyNOR_grid = noisyNOR_grid*(1 - np.array(occu_grid_data))
 
 		# compute noisy-OR
 		noisyOR_grid = 1 - noisyNOR_grid

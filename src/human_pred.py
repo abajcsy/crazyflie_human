@@ -155,7 +155,8 @@ class HumanPrediction(object):
 		self.deltat = self.res/self.human_vel
 
 		# TODO This is for debugging.
-		print "----- Running prediction for: -----"
+		print "----- Running prediction for human : -----"
+		print " - human: ", self.human_number
 		print "	- experiment: ", self.exp
 		print "	- beta model: ", self.beta_model
 		print "	- prob thresh: ", self.prob_thresh
@@ -536,5 +537,10 @@ class HumanPrediction(object):
 		return marker
 
 if __name__ == '__main__':
+	if len(sys.argv) < 2:
+		human_num = "1"
+		print "human_pred: no human_num arg specified. Setting human_num to 1."
+	else:
+		human_num = sys.argv[1]
 
-	human = HumanPrediction()
+	human = HumanPrediction(human_num)
