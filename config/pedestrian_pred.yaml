@@ -10,6 +10,9 @@ state:
 
 pred:
 
+  # Number of humans in the space that you want to do prediction for
+  num_humans: 2
+
   # Dimensions of the prediction map
   sim_height: 26
   sim_width: 26

@@ -5,12 +5,11 @@ import sys, select, os
 import numpy as np
 import time
 import copy
+import math
 
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, Pose2D, Vector3
 from nav_msgs.msg import OccupancyGrid
 from crazyflie_human.msg import OccupancyGridTime, ProbabilityGrid
-
-NUM_HUMANS = 2
 
 class MultiHumanPrediction(object):
 	"""
@@ -29,7 +28,7 @@ class MultiHumanPrediction(object):
 		self.load_parameters()
 		self.register_callbacks()
 
-		rate = rospy.Rate(100) 
+		rate = rospy.Rate(10) 
 
 		while not rospy.is_shutdown():
 			# shudown upon ENTER
@@ -62,8 +61,11 @@ class MultiHumanPrediction(object):
 		# compute the timestep (seconds/cell)
 		self.deltat = self.res/self.human_vel
 
+		# number of humans in your space
+		self.num_humans = rospy.get_param("pred/num_humans")
+
 		# stores the occu_grid_time for each human
-		self.all_occu_grids = [None]*NUM_HUMANS
+		self.all_occu_grids = [None]*self.num_humans
 		self.noisyOR_occu_grid = None
 
 		# measurements of gridworld
@@ -73,15 +75,15 @@ class MultiHumanPrediction(object):
 
 		# TODO This is for debugging.
 		print "----- Running multi-prediction for: -----"
-		print " - num humans: ", NUM_HUMANS
+		print " - num humans: ", self.num_humans
 		print "-----------------------------------"
 
 	def register_callbacks(self):
 		"""
 		Sets up all the publishers/subscribers needed.
 		"""
-		self.human_subs = [None]*NUM_HUMANS
-		for human_num in range(NUM_HUMANS):
+		self.human_subs = [None]*self.num_humans
+		for human_num in range(self.num_humans):
 			# subscribe to the info of the human walking around the space
 			self.human_subs[human_num] = rospy.Subscriber('/occupancy_grid_time'+str(human_num+1), 
 				OccupancyGridTime, self.human_grid_callback, queue_size=1)
@@ -94,8 +96,9 @@ class MultiHumanPrediction(object):
 		Takes a human grid callback and stores it 
 		"""
 
-		print "got human grid callback: ", msg.object_num
-		print "timestamp: ", msg.gridarray[0].header.stamp
+		#print "got human grid callback: ", msg.object_num
+		#print "timestamp: ", msg.gridarray[0].header.stamp
+
 		# human num takes values 1 --> NUM_HUMAN
 		# but if no human_num is provided, make sure to index right
 		if msg.object_num == 0:
@@ -112,8 +115,6 @@ class MultiHumanPrediction(object):
 		if self.all_occu_grids is None:
 			return
 
-		#print "none all_occu_grids? ", (self.all_occu_grids is None)
-		#print "none all_occu_grids[0]? ", (self.all_occu_grids[0] is None)
 		curr_time = rospy.Time.now()
 		all_grids_copy = copy.deepcopy(self.all_occu_grids)
 		grid_len = self.sim_height*self.sim_width
@@ -127,10 +128,11 @@ class MultiHumanPrediction(object):
 
 				# shift old data to align
 				if grid_time.to_sec() < (curr_time.to_sec() - self.deltat):
-					d = floor((curr_time - grid_time)/self.deltat)
-					for k in range(self.fwd_tsteps-d-1):
+					d = int(math.floor((curr_time.to_sec() - grid_time.to_sec())/self.deltat))
+					future_times = int(self.fwd_tsteps)
+					for k in range(future_times-d-1):
 						occu_grid[k].data = occu_grid[k+d].data
-					for k in range(self.fwd_tsteps-d, self.fwd_tsteps-1):
+					for k in range(future_times-d, future_times-1):
 						occu_grid[k].data = [0.0]*grid_len
 
 				occu_grid_data = np.array([[0.0]*grid_len]*self.fwd_tsteps)
