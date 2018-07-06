@@ -79,7 +79,6 @@ class PredictionVisualizer(object):
 		# convert the message into the data structure
 		self.from_ROSMsg(msg)
 
-
 		# show the forward prediction
 		#for i in range(1,5):
 		#	curr_time = rospy.Time.now()
@@ -87,12 +86,18 @@ class PredictionVisualizer(object):
 		#	if (diff_t >= self.visualization_delta):
 		#		self.prev_t += rospy.Duration.from_sec(self.visualization_delta)
 
+
+		s = rospy.Time().now()
+
 		# show fixed block of fwd_tsteps
-		#self.visualize_occugrid(self.fwd_tsteps)
+		self.visualize_occugrid(self.fwd_tsteps)
+
+		e = rospy.Time().now()
+		print "time to visualize grid: ", (e.to_sec()-s.to_sec())
 
 		# show waves
-		for time in range(self.fwd_tsteps):
-			self.visualize_waves(time)
+		#for time in range(self.fwd_tsteps):
+		#	self.visualize_waves(time)
 
 	def from_ROSMsg(self, msg):
 		"""

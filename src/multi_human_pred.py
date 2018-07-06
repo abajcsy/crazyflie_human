@@ -113,6 +113,7 @@ class MultiHumanPrediction(object):
 
 		# sanity check before we have gotten any messages
 		if self.all_occu_grids is None:
+			print "[multi_human_prediction]: all_occu_grids are None"
 			return
 
 		curr_time = rospy.Time.now()
@@ -121,6 +122,8 @@ class MultiHumanPrediction(object):
 
 		noisyNOR_grid = np.array([[1.0]*grid_len]*self.fwd_tsteps)
 		noisyOR_grid = np.array([[0.0]*grid_len]*self.fwd_tsteps)
+
+		s = rospy.Time().now()
 
 		for occu_grid in all_grids_copy:
 			if occu_grid is not None:
@@ -141,9 +144,14 @@ class MultiHumanPrediction(object):
 
 				# accumulate the noisy-NOR
 				noisyNOR_grid = noisyNOR_grid*(1 - np.array(occu_grid_data))
+			else:
+				print "[multi_human_prediction]: occu_grid is None"
 
 		# compute noisy-OR
 		noisyOR_grid = 1 - noisyNOR_grid
+
+		e = rospy.Time().now()
+		#print "TOTAL TIME TO UPDATE GRID: ", (e.to_sec()-s.to_sec())
 
 		# convert to ROS message and publish over topic
 		self.noisyOR_occu_grid = self.noisyOR_to_message(noisyOR_grid, curr_time)

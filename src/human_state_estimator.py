@@ -6,9 +6,9 @@ import geometry_msgs.msg
 import sys
 
 if __name__ == '__main__':
-	if len(sys.argv) < 2:
+	if len(sys.argv) < 4:
 		human_num = "1"
-		print "human_state_estimator: no human_num arg specified. Setting human_num = 1."
+		print "[human_state_estimator]: no human_num arg specified. Setting human_num = 1."
 	else:
 		human_num = sys.argv[1]
 
@@ -16,13 +16,14 @@ if __name__ == '__main__':
 
 	listener = tf.TransformListener()
 
-	# TODO MAKE THIS FOR MULTIPLE HUMANS
-	pose_pub = rospy.Publisher('/human_pose'+human_num, geometry_msgs.msg.PoseStamped, queue_size=1)
+	pub_topic = '/human_pose'+human_num
+	pose_pub = rospy.Publisher(pub_topic, geometry_msgs.msg.PoseStamped, queue_size=1)
 
 	rate = rospy.Rate(100.0)
 	while not rospy.is_shutdown():
 		try:
-			(trans,rot) = listener.lookupTransform('/world', '/vicon/hat/hat'+human_num, rospy.Time(0))
+			hat_tf = '/vicon/hat/hat'+human_num
+			(trans,rot) = listener.lookupTransform('/world', hat_tf, rospy.Time(0))
 		except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
 			continue
 

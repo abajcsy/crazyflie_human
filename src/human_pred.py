@@ -4,6 +4,7 @@ import rospy
 import sys, select, os
 import numpy as np
 import time
+import pickle
 
 from std_msgs.msg import String, Float32, ColorRGBA
 from nav_msgs.msg import OccupancyGrid
@@ -36,7 +37,7 @@ class HumanPrediction(object):
 		rospy.init_node('human_prediction', anonymous=True)
 
 		# store which human occu grid we are computing
-		self.human_number = human_number
+		self.human_number = human_number if human_number is not "" else "1"
 
 		# load all the prediction params and setup subscriber/publishers
 		self.load_parameters()
@@ -57,15 +58,22 @@ class HumanPrediction(object):
 		rate = rospy.Rate(100) 
 
 		while not rospy.is_shutdown():
-			#if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-			#	line = raw_input()
-			#	break
+			if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+				line = raw_input()
+				break
 
 			# plot start/goal markers for visualization
 			# self.start_pub.publish(self.state_to_marker(xy=self.real_start, color="G"))
 			self.goal_pub.publish(marker_array)
 
 			rate.sleep()
+
+		time_file = "/home/hysys9/crazyflie_human_ws/src/crazyflie_human/src/human"+self.human_number+"times.p"
+		pred_file = "/home/hysys9/crazyflie_human_ws/src/crazyflie_human/src/human"+self.human_number+"pred_times.p"
+		pickle.dump(self.times, open(time_file, 'wb'))
+		pickle.dump(self.pred_times, open(pred_file, 'wb'))
+
+		print "Write human_pred debugging info to files."
 
 	def load_parameters(self):
 		"""
@@ -154,6 +162,11 @@ class HumanPrediction(object):
 		# compute the timestep (seconds/cell)
 		self.deltat = self.res/self.human_vel
 
+		# debugging variables
+		self.start_t = None
+		self.times = None
+		self.pred_times = None 
+
 		# TODO This is for debugging.
 		print "----- Running prediction for human : -----"
 		print " - human: ", self.human_number
@@ -212,11 +225,35 @@ class HumanPrediction(object):
 			# update the map with where the human is at the current time
 			self.update_human_traj(xypose)
 
+			s = rospy.Time().now()
+
 			# infer the new human occupancy map from the current state
 			self.infer_occupancies() 
 	
+			# --- DEBUGGING --- #
+
+			if self.times is None or self.start_t is None:
+				self.start_t = rospy.Time().now()
+				self.times = [0.0]
+			else: 
+				t = rospy.Time().now().to_sec() - self.start_t.to_sec()
+				list.append(self.times, t)
+
 			# update human pose marker
 			self.marker_pub.publish(self.pose_to_marker(xypose))
+
+			e = rospy.Time().now()
+			total_pred_runtime = (e.to_sec()-s.to_sec())
+
+			if self.pred_times is None:
+				self.pred_times = [total_pred_runtime]
+			else:
+				list.append(self.pred_times, total_pred_runtime)
+
+			# --- DEBUGGING --- #
+
+			#print "time to infer occupancies for H", self.human_number, ": ", (e.to_sec()-s.to_sec())
+			#print "AVERAGE time to infer occupancies for H", self.human_number, ": ", self.total_pred_runtime/self.num_timesamples
 
 			# publish occupancy grid list
 			if self.occupancy_grids is not None:
@@ -450,7 +487,7 @@ class HumanPrediction(object):
 		"""
 		timed_grid = OccupancyGridTime()
 		timed_grid.gridarray = [None]*self.fwd_tsteps
-		timed_grid.object_num = int(self.human_number) if self.human_number is not "" else 0
+		timed_grid.object_num = int(self.human_number) 
 
 		curr_time = rospy.Time.now()
 
@@ -537,9 +574,9 @@ class HumanPrediction(object):
 		return marker
 
 if __name__ == '__main__':
-	if len(sys.argv) < 2:
+	if len(sys.argv) < 4:
 		human_num = "1"
-		print "human_pred: no human_num arg specified. Setting human_num to 1."
+		print "[human_pred]: no human_num arg specified. Setting human_num to 1."
 	else:
 		human_num = sys.argv[1]
 
