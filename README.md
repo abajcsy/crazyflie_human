@@ -25,6 +25,7 @@ and make sure the simulated human data is commented out:
 ```
 
 # Running the code
+To run the human motion prediction code, type the following ROS command into your terminal:
 ```
 roslaunch crazyflie_human multi_sim.launch beta:=adaptive
 ```
