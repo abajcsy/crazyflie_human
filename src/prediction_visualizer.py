@@ -86,14 +86,13 @@ class PredictionVisualizer(object):
 		#	if (diff_t >= self.visualization_delta):
 		#		self.prev_t += rospy.Duration.from_sec(self.visualization_delta)
 
-
-		s = rospy.Time().now()
+		#s = rospy.Time().now()
 
 		# show fixed block of fwd_tsteps
 		self.visualize_occugrid(self.fwd_tsteps)
 
-		e = rospy.Time().now()
-		print "time to visualize grid: ", (e.to_sec()-s.to_sec())
+		#e = rospy.Time().now()
+		# print "time to visualize grid: ", (e.to_sec()-s.to_sec())
 
 		# show waves
 		#for time in range(self.fwd_tsteps):

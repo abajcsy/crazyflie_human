@@ -11,14 +11,25 @@ state:
 pred:
 
   # Number of humans in the space that you want to do prediction for
-  num_humans: 2
+  num_humans: 1
+
+  # Start position of human(s) and list of potential goal locations
+  human1_real_start: [1.61,-1.02]
+  human1_real_goals: [[1.0, 2.60]]
+
+  human2_real_start: [-1.0,-1.02]
+  human2_real_goals: [[-0.17, 2.60], [-2.0, 0.78]]
+
+  # color coding for human visualization (RGB)
+  human1_color: [1.0, 0.0, 0.0]
+  human2_color: [0.0, 0.0, 1.0]
 
   # Dimensions of the prediction map
   sim_height: 26
   sim_width: 26
 
+  # [ DEPRACATED ]
   # Start position of human and list of potential goal locations
-  # 
   # TRIANGLE EXPERIMENT
   triangle_real_start: [1.61,-1.02]
   triangle_real_goals: [[-0.17, 2.60], [-2.0, 0.78]]

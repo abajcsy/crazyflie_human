@@ -46,7 +46,7 @@ class HumanPrediction(object):
 		# make a marker array for all the goals
 		marker_array = MarkerArray()
 		for g in self.real_goals:
-			marker = self.state_to_marker(xy=g, color="R")
+			marker = self.state_to_marker(xy=g, color=self.color)
 			marker_array.markers.append(marker)
 
 		# Re-number the marker IDs
@@ -63,17 +63,16 @@ class HumanPrediction(object):
 				break
 
 			# plot start/goal markers for visualization
-			# self.start_pub.publish(self.state_to_marker(xy=self.real_start, color="G"))
+			# self.start_pub.publish(self.state_to_marker(xy=self.real_start, color=[0.0, 1.0, 0.0]))
 			self.goal_pub.publish(marker_array)
 
 			rate.sleep()
 
-		time_file = "/home/hysys9/crazyflie_human_ws/src/crazyflie_human/src/human"+self.human_number+"times.p"
-		pred_file = "/home/hysys9/crazyflie_human_ws/src/crazyflie_human/src/human"+self.human_number+"pred_times.p"
-		pickle.dump(self.times, open(time_file, 'wb'))
-		pickle.dump(self.pred_times, open(pred_file, 'wb'))
-
-		print "Write human_pred debugging info to files."
+		#time_file = "/home/hysys9/crazyflie_human_ws/src/crazyflie_human/src/human"+self.human_number+"times.p"
+		#pred_file = "/home/hysys9/crazyflie_human_ws/src/crazyflie_human/src/human"+self.human_number+"pred_times.p"
+		#pickle.dump(self.times, open(time_file, 'wb'))
+		#pickle.dump(self.pred_times, open(pred_file, 'wb'))
+		#print "Write human_pred debugging info to files."
 
 	def load_parameters(self):
 		"""
@@ -134,19 +133,24 @@ class HumanPrediction(object):
 		self.exp = rospy.get_param("exp")
 
 		# (real-world) start and goal locations 
-		# TODO: THIS ISNT ACTUALLY USED, ITS JUST FOR SANITY CHECKING
-		if self.exp == "coffee":
-			self.real_start = rospy.get_param("pred/coffee_real_start") 
-			self.real_goals = rospy.get_param("pred/coffee_real_goals")
-		elif self.exp == "triangle":
-			self.real_start = rospy.get_param("pred/triangle_real_start") 
-			self.real_goals = rospy.get_param("pred/triangle_real_goals")
-		else:
-			rospy.signal_shutdown("Experiment type is not valid!")
+		self.real_start = rospy.get_param("pred/human"+self.human_number+"_real_start")
+		self.real_goals = rospy.get_param("pred/human"+self.human_number+"_real_goals")
+
+		#if self.exp == "coffee":
+		#	self.real_start = rospy.get_param("pred/coffee_real_start") 
+		#	self.real_goals = rospy.get_param("pred/coffee_real_goals")
+		#elif self.exp == "triangle":
+		#	self.real_start = rospy.get_param("pred/triangle_real_start") 
+		#	self.real_goals = rospy.get_param("pred/triangle_real_goals")
+		#else:
+		#	rospy.signal_shutdown("Experiment type is not valid!")
 
 		# (simulation) start and goal locations
 		self.sim_start = self.real_to_sim_coord(self.real_start)
 		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
+
+		# color to use to represent this human
+		self.color = rospy.get_param("pred/human"+self.human_number+"_color")
 
 		# tracks the human's state over time
 		self.real_human_traj = None
@@ -189,7 +193,7 @@ class HumanPrediction(object):
 			OccupancyGridTime, queue_size=1)
 		self.beta_pub = rospy.Publisher('/beta_topic'+self.human_number, 
 			Float32, queue_size=1)
-		self.goal_pub = rospy.Publisher('/goal_markers', MarkerArray, queue_size=10)
+		self.goal_pub = rospy.Publisher('/goal_markers'+self.human_number, MarkerArray, queue_size=10)
 		self.start_pub = rospy.Publisher('/start_marker', Marker, queue_size=10)
 		self.grid_vis_pub = rospy.Publisher('/occu_grid_marker'+self.human_number, 
 			Marker, queue_size=10)
@@ -240,7 +244,7 @@ class HumanPrediction(object):
 				list.append(self.times, t)
 
 			# update human pose marker
-			self.marker_pub.publish(self.pose_to_marker(xypose))
+			self.marker_pub.publish(self.pose_to_marker(xypose, color=self.color))
 
 			e = rospy.Time().now()
 			total_pred_runtime = (e.to_sec()-s.to_sec())
@@ -515,7 +519,7 @@ class HumanPrediction(object):
  
 		return timed_grid
 
-	def state_to_marker(self, xy=[0,0], color="R"):
+	def state_to_marker(self, xy=[0,0], color=[1.0,0.0,0.0]):
 		"""
 		Converts xy position to marker type to vizualize human
 		"""
@@ -531,19 +535,16 @@ class HumanPrediction(object):
 		marker.scale.y = self.res
 		marker.scale.z = self.res
 		marker.color.a = 1.0
-		if color is "R":
-			marker.color.r = 1.0
-		elif color is "G":
-			marker.color.g = 1.0
-		else:
-			marker.color.b = 1.0
+		marker.color.r = color[0]
+		marker.color.g = color[1]
+		marker.color.b = color[2]
 
 		marker.pose.position.x = xy[0]
 		marker.pose.position.y = xy[1]
 
 		return marker
 
-	def pose_to_marker(self, xypose):
+	def pose_to_marker(self, xypose, color=[1.0,0.0,0.0]):
 		"""
 		Converts pose to marker type to vizualize human
 		"""
@@ -558,9 +559,9 @@ class HumanPrediction(object):
 		marker.scale.y = self.res
 		marker.scale.z = self.human_height + 0.001
 		marker.color.a = 1.0
-		marker.color.r = 0.0
-		marker.color.g = 0.0
-		marker.color.b = 0.0
+		marker.color.r = color[0]
+		marker.color.g = color[1]
+		marker.color.b = color[2]
 
 		if xypose is not None:
 			marker.pose.position.x = xypose[0] 

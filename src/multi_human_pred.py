@@ -36,8 +36,10 @@ class MultiHumanPrediction(object):
 				line = raw_input()
 				break
 
-			# update the final occupancy grid by merging all human grids
-			self.update_noisyOR_grid()
+			if self.num_humans > 1:
+				# update the final occupancy grid by merging all human grids
+				self.update_noisyOR_grid()
+
 			rate.sleep()
 
 
@@ -76,7 +78,7 @@ class MultiHumanPrediction(object):
 		# TODO This is for debugging.
 		print "----- Running multi-prediction for: -----"
 		print " - num humans: ", self.num_humans
-		print "-----------------------------------"
+		print "-----------------------------------------"
 
 	def register_callbacks(self):
 		"""
@@ -96,15 +98,17 @@ class MultiHumanPrediction(object):
 		Takes a human grid callback and stores it 
 		"""
 
-		#print "got human grid callback: ", msg.object_num
-		#print "timestamp: ", msg.gridarray[0].header.stamp
-
-		# human num takes values 1 --> NUM_HUMAN
-		# but if no human_num is provided, make sure to index right
-		if msg.object_num == 0:
-			self.all_occu_grids[0] = msg.gridarray
-		else: 
-			self.all_occu_grids[msg.object_num-1] = msg.gridarray
+		# if there is only one human, then just republish the single grid to 
+		# the /occupancy_grid_time topic
+		if self.num_humans == 1:
+			self.occu_pub.publish(msg)
+		else:
+			# human num takes values 1 --> NUM_HUMAN
+			# but if no human_num is provided, make sure to index right
+			if msg.object_num == 0:
+				self.all_occu_grids[0] = msg.gridarray
+			else: 
+				self.all_occu_grids[msg.object_num-1] = msg.gridarray
 
 	def update_noisyOR_grid(self):
 		"""
@@ -156,7 +160,6 @@ class MultiHumanPrediction(object):
 		# convert to ROS message and publish over topic
 		self.noisyOR_occu_grid = self.noisyOR_to_message(noisyOR_grid, curr_time)
 		self.occu_pub.publish(self.noisyOR_occu_grid)
-
 
 	def noisyOR_to_message(self, noisyOR_grid, curr_time):
 		"""

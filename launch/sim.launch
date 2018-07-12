@@ -18,14 +18,14 @@
 	<param name="exp" value="$(arg exp)" />
 	<param name="beta" value="$(arg beta)" />
 
-	<!-- simulate human walking around 
-	<node name="simulate_human" pkg="crazyflie_human" type="sim_human.py" output="screen"/> -->
+	<!-- simulate human walking around -->
+	<node name="simulate_human" pkg="crazyflie_human" type="sim_human.py" args="1" output="screen"/> 
 	
-	<!-- read data from optitrack of human walking around -->
-	<node name="human_state_estimator" pkg="crazyflie_human" type="human_state_estimator.py" output="screen"/>
+	<!-- read data from optitrack of human walking around 
+	<node name="human_state_estimator" pkg="crazyflie_human" type="human_state_estimator.py" args="1" output="screen"/> -->
 	
 	<!-- simulate world -->
-	<node name="human_prediction" pkg="crazyflie_human" type="human_pred.py" output="screen"/> 
+	<node name="human_prediction" pkg="crazyflie_human" type="human_pred.py" args="1" output="screen"/> 
 
 	<!-- visualize occupancy grids -->
 	<node name="prediction_visualizer" pkg="crazyflie_human" type="prediction_visualizer.py" output="screen"/> 

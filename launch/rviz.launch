@@ -1,0 +1,10 @@
+<launch>
+  <!-- Launch RViz with the proper config file robot descriptor. -->
+  <node name="rviz"
+        pkg="rviz"
+        type="rviz"
+        args="-d $(find crazyflie_human)/rviz/human.rviz"
+        required="true">
+  </node>
+
+</launch>
