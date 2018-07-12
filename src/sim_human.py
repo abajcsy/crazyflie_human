@@ -51,7 +51,7 @@ class SimHuman(object):
 		self.real_upper = up
 
 		# get which experimental setup we are in
-		self.exp = rospy.get_param("exp")
+		#self.exp = rospy.get_param("exp")
 
 		# (real-world) start and goal locations 
 		#if self.exp == "coffee":

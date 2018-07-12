@@ -89,7 +89,7 @@ class PredictionVisualizer(object):
 		#s = rospy.Time().now()
 
 		# show fixed block of fwd_tsteps
-		self.visualize_occugrid(self.fwd_tsteps)
+		self.visualize_occugrid(5)
 
 		#e = rospy.Time().now()
 		# print "time to visualize grid: ", (e.to_sec()-s.to_sec())

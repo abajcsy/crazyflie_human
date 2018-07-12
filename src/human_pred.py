@@ -130,7 +130,7 @@ class HumanPrediction(object):
 		self.real_upper = up
 
 		# get which experimental setup we are in
-		self.exp = rospy.get_param("exp")
+		#self.exp = rospy.get_param("exp")
 
 		# (real-world) start and goal locations 
 		self.real_start = rospy.get_param("pred/human"+self.human_number+"_real_start")
@@ -172,12 +172,12 @@ class HumanPrediction(object):
 		self.pred_times = None 
 
 		# TODO This is for debugging.
-		print "----- Running prediction for human : -----"
-		print " - human: ", self.human_number
-		print "	- experiment: ", self.exp
+		print "----- Running prediction for one human : -----"
+		print "	- human: ", self.human_number
+		#print "	- experiment: ", self.exp
 		print "	- beta model: ", self.beta_model
 		print "	- prob thresh: ", self.prob_thresh
-		print "-----------------------------------"
+		print "----------------------------------------------"
 
 	#TODO THESE TOPICS SHOULD BE FROM THE YAML/LAUNCH FILE
 	def register_callbacks(self):

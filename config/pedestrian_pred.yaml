@@ -28,7 +28,7 @@ pred:
   sim_height: 26
   sim_width: 26
 
-  # [ DEPRACATED ]
+  # [ DEPRECATED ]
   # Start position of human and list of potential goal locations
   # TRIANGLE EXPERIMENT
   triangle_real_start: [1.61,-1.02]

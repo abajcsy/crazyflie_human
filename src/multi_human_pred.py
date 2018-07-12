@@ -76,9 +76,9 @@ class MultiHumanPrediction(object):
 
 
 		# TODO This is for debugging.
-		print "----- Running multi-prediction for: -----"
-		print " - num humans: ", self.num_humans
-		print "-----------------------------------------"
+		print "----- Running multi-prediction for: ----------"
+		print "	- num humans: ", self.num_humans
+		print "----------------------------------------------"
 
 	def register_callbacks(self):
 		"""

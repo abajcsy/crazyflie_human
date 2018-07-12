@@ -5,8 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /TF1/Frames1
-        - /goals11
-        - /goals21
       Splitter Ratio: 0.5
     Tree Height: 762
   - Class: rviz/Selection
@@ -113,11 +111,6 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: ""
-        base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
       Name: RobotModel
       Robot Description: robot_description
       TF Prefix: tracker
@@ -188,22 +181,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 14.3985
+      Distance: 11.0907
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
+        X: 0.248589
+        Y: -0.747394
         Z: 0
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.0404
+      Pitch: 1.1954
       Target Frame: planner
       Value: ThirdPersonFollower (rviz)
-      Yaw: 4.61859
+      Yaw: 4.70358
     Saved: ~
 Window Geometry:
   Displays:
