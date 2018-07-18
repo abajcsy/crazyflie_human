@@ -19,6 +19,7 @@ Panels:
   - Class: rviz/Views
     Expanded:
       - /Current View1
+      - /Current View1/Position1
     Name: Views
     Splitter Ratio: 0.5
   - Class: rviz/Time
@@ -126,35 +127,43 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /human_marker2
       Name: human2
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /goal_markers1
       Name: goals1
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /goal_markers2
       Name: goals2
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /occu_grid_marker
       Name: occu_grid
       Namespaces:
         visualize: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /world_marker
+      Name: world
+      Namespaces:
+        "": true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -180,23 +189,22 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/ThirdPersonFollower
-      Distance: 11.0907
+      Class: rviz/FPS
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: 0.248589
-        Y: -0.747394
-        Z: 0
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.1954
+      Pitch: 1.0498
+      Position:
+        X: -4.10208
+        Y: 1.01962
+        Z: 6.94873
       Target Frame: planner
-      Value: ThirdPersonFollower (rviz)
-      Yaw: 4.70358
+      Value: FPS (rviz)
+      Yaw: 0.161989
     Saved: ~
 Window Geometry:
   Displays:

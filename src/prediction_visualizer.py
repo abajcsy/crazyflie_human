@@ -25,6 +25,7 @@ class PredictionVisualizer(object):
 
 		rate = rospy.Rate(100) 
 		while not rospy.is_shutdown():
+			self.world_pub.publish(self.world_marker)
 			rate.sleep()
 
 	def load_parameters(self):
@@ -56,6 +57,7 @@ class PredictionVisualizer(object):
 		# get real-world measurements of experimental space
 		self.real_height = up[1] - low[1] 
 		self.real_width = up[0] - low[0] 
+		self.real_z = up[2] - low[2]
 		# store the lower and upper measurements
 		self.real_lower = low
 		self.real_upper = up
@@ -67,6 +69,12 @@ class PredictionVisualizer(object):
 		self.visualization_delta = 0.05
 		self.prev_t = rospy.Time().now()
 
+		# visualize 
+		world_xy = [low[0] + self.real_width/2.0, low[1] + self.real_height/2.0]
+		world_color = [0.1, 0, 0.9]
+		world_scale = [self.real_width, self.real_height, self.real_z]
+		self.world_marker = self.state_to_marker(xy=world_xy, color=world_color, alpha=0.5, scale=world_scale)
+
 	def register_callbacks(self):
 		"""
 		Sets up publishers and subscribers
@@ -74,7 +82,8 @@ class PredictionVisualizer(object):
 
 		self.occu_sub = rospy.Subscriber('/occupancy_grid_time', OccupancyGridTime, self.occu_grid_callback, queue_size=1)	
 		self.grid_vis_pub = rospy.Publisher('/occu_grid_marker', Marker, queue_size=0)
-			
+		self.world_pub = rospy.Publisher('/world_marker', Marker, queue_size=10)
+
 	def occu_grid_callback(self, msg):
 		# convert the message into the data structure
 		self.from_ROSMsg(msg)
@@ -263,6 +272,33 @@ class PredictionVisualizer(object):
 				interpolated_grid[i] = curr
 
 			return interpolated_grid
+
+
+	def state_to_marker(self, xy=[0,0], color=[1.0,0.0,0.0], alpha=1.0, scale=[0.1464 , 0.1464, 0.1464]):
+		"""
+		Converts xy position to marker type to vizualize human
+		"""
+		marker = Marker()
+		marker.header.frame_id = "/world"
+		marker.header.stamp = rospy.Time().now()
+
+		marker.type = marker.CUBE
+		marker.action = marker.ADD
+		marker.pose.orientation.w = 1
+		marker.pose.position.z = 0
+		marker.scale.x = scale[0]
+		marker.scale.y = scale[1]
+		marker.scale.z = scale[2]
+		marker.color.a = alpha
+		marker.color.r = color[0]
+		marker.color.g = color[1]
+		marker.color.b = color[2]
+
+		marker.pose.position.x = xy[0]
+		marker.pose.position.y = xy[1]
+		marker.pose.position.z = self.real_z/2.0
+
+		return marker
 
 if __name__ == '__main__':
 	visualizer = PredictionVisualizer()
