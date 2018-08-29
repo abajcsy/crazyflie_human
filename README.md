@@ -2,6 +2,9 @@
 
 ROS and crazyflie-integrated prediction of human motion. 
 
+# Dependencies
+This repository depends on the ```pedestrian_prediction``` repository which may be found [here](https://github.com/sirspinach/pedestrian_prediction) and the ```crazyflie_clean``` package which may be found [here](https://github.com/HJReachability/crazyflie_clean).
+
 # Choosing where your human data comes from
 
 ## Simulated human data
