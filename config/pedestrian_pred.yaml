@@ -11,7 +11,7 @@ state:
 pred:
 
   # Number of humans in the space that you want to do prediction for
-  num_humans: 1
+  num_humans: 2
 
   # Start position of human(s) and list of potential goal locations
   human1_real_start: [1.61,-1.02]

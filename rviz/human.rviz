@@ -5,8 +5,10 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /TF1/Frames1
+        - /occu_grid11
+        - /occu_grid21
       Splitter Ratio: 0.5
-    Tree Height: 762
+    Tree Height: 745
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -15,11 +17,10 @@ Panels:
       - /2D Nav Goal1
       - /Publish Point1
     Name: Tool Properties
-    Splitter Ratio: 0.588679
+    Splitter Ratio: 0.588679016
   - Class: rviz/Views
     Expanded:
       - /Current View1
-      - /Current View1/Position1
     Name: Views
     Splitter Ratio: 0.5
   - Class: rviz/Time
@@ -36,7 +37,7 @@ Visualization Manager:
       Color: 46; 46; 47
       Enabled: true
       Line Style:
-        Line Width: 0.03
+        Line Width: 0.0299999993
         Value: Lines
       Name: Grid
       Normal Cell Count: 0
@@ -53,13 +54,24 @@ Visualization Manager:
       Frame Timeout: 10000
       Frames:
         All Enabled: false
+        plannerHY1:
+          Value: true
+        trackerHY1:
+          Value: true
+        trackerHY1/base_link:
+          Value: true
+        world:
+          Value: true
       Marker Scale: 2
       Name: TF
       Show Arrows: false
       Show Axes: true
       Show Names: false
       Tree:
-        {}
+        world:
+          trackerHY1:
+            trackerHY1/base_link:
+              {}
       Update Interval: 0
       Value: true
     - Class: rviz/Marker
@@ -72,7 +84,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /vis/known_env
+      Marker Topic: /vis/known_envHY1
       Name: Known Map
       Namespaces:
         {}
@@ -80,16 +92,32 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /vis/bound
-      Name: Tracking Bound
+      Marker Topic: /vis/boundHY1
+      Name: Tracking Bound1
       Namespaces:
         {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /vis/traj
-      Name: Trajectory
+      Marker Topic: /vis/boundHY2
+      Name: TrackingBound2
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /vis/trajHY1
+      Name: Trajectory1
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /vis/trajHY2
+      Name: Trajectory2
       Namespaces:
         {}
       Queue Size: 100
@@ -112,9 +140,35 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: ""
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
       Name: RobotModel
       Robot Description: robot_description
-      TF Prefix: tracker
+      TF Prefix: trackerHY1
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
+    - Alpha: 1
+      Class: rviz/RobotModel
+      Collision Enabled: false
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Name: RobotModel2
+      Robot Description: robot_description
+      TF Prefix: trackerHY2
       Update Interval: 0
       Value: true
       Visual Enabled: true
@@ -127,48 +181,57 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
-      Enabled: false
+      Enabled: true
       Marker Topic: /human_marker2
       Name: human2
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/MarkerArray
-      Enabled: false
+      Enabled: true
       Marker Topic: /goal_markers1
       Name: goals1
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/MarkerArray
-      Enabled: false
+      Enabled: true
       Marker Topic: /goal_markers2
       Name: goals2
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /occu_grid_marker
-      Name: occu_grid
+      Marker Topic: /occu_grid_marker1
+      Name: occu_grid1
       Namespaces:
         visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
       Enabled: true
+      Marker Topic: /occu_grid_marker2
+      Name: occu_grid2
+      Namespaces:
+        visualize: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: false
       Marker Topic: /world_marker
       Name: world
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
+    Default Light: true
     Fixed Frame: world
     Frame Rate: 30
   Name: root
@@ -189,30 +252,34 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/FPS
+      Class: rviz/ThirdPersonFollower
+      Distance: 10
       Enable Stereo Rendering:
-        Stereo Eye Separation: 0.06
+        Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Focal Shape Fixed Size: false
+      Focal Shape Size: 0.0500000007
+      Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 0.01
-      Pitch: 1.0498
-      Position:
-        X: -4.10208
-        Y: 1.01962
-        Z: 6.94873
-      Target Frame: planner
-      Value: FPS (rviz)
-      Yaw: 0.161989
+      Near Clip Distance: 0.00999999978
+      Pitch: 0.785398185
+      Target Frame: <Fixed Frame>
+      Value: ThirdPersonFollower (rviz)
+      Yaw: 0.785398185
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1053
+  Height: 1028
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000017c0000038efc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006600fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c00610079007301000000280000038e000000e200fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c0000026100000001000001130000038efc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a0056006900650077007301000000280000038e000000b800fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073700000040fc0100000002fb0000000800540069006d00650100000000000007370000034300fffffffb0000000800540069006d006501000000000000045000000000000000000000049c0000038e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000017c00000378fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006100fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002800000378000000d700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000011300000378fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000002800000378000000ad00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073700000040fc0100000002fb0000000800540069006d00650100000000000007370000030000fffffffb0000000800540069006d006501000000000000045000000000000000000000049c0000037800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:

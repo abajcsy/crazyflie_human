@@ -32,7 +32,6 @@ class PredictionVisualizer(object):
 		"""
 		Loads all the important paramters of the human sim
 		"""
-
 		# measurements of gridworld
 		self.sim_height = int(rospy.get_param("pred/sim_height"))
 		self.sim_width = int(rospy.get_param("pred/sim_width"))
@@ -58,6 +57,7 @@ class PredictionVisualizer(object):
 		self.real_height = up[1] - low[1] 
 		self.real_width = up[0] - low[0] 
 		self.real_z = up[2] - low[2]
+
 		# store the lower and upper measurements
 		self.real_lower = low
 		self.real_upper = up
@@ -79,11 +79,10 @@ class PredictionVisualizer(object):
 		"""
 		Sets up publishers and subscribers
 		"""
-
 		self.occu_sub = rospy.Subscriber('/occupancy_grid_time', OccupancyGridTime, self.occu_grid_callback, queue_size=1)	
 		self.grid_vis_pub = rospy.Publisher('/occu_grid_marker', Marker, queue_size=0)
 		self.world_pub = rospy.Publisher('/world_marker', Marker, queue_size=10)
-
+		
 	def occu_grid_callback(self, msg):
 		# convert the message into the data structure
 		self.from_ROSMsg(msg)

@@ -136,15 +136,6 @@ class HumanPrediction(object):
 		self.real_start = rospy.get_param("pred/human"+self.human_number+"_real_start")
 		self.real_goals = rospy.get_param("pred/human"+self.human_number+"_real_goals")
 
-		#if self.exp == "coffee":
-		#	self.real_start = rospy.get_param("pred/coffee_real_start") 
-		#	self.real_goals = rospy.get_param("pred/coffee_real_goals")
-		#elif self.exp == "triangle":
-		#	self.real_start = rospy.get_param("pred/triangle_real_start") 
-		#	self.real_goals = rospy.get_param("pred/triangle_real_goals")
-		#else:
-		#	rospy.signal_shutdown("Experiment type is not valid!")
-
 		# (simulation) start and goal locations
 		self.sim_start = self.real_to_sim_coord(self.real_start)
 		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
@@ -262,6 +253,7 @@ class HumanPrediction(object):
 			# publish occupancy grid list
 			if self.occupancy_grids is not None:
 				self.occu_pub.publish(self.grid_to_message())
+				self.visualize_occugrid(5)
 
 			# adjust the deltat based on the observed measurements
 			if self.prev_pos is not None:
@@ -403,6 +395,12 @@ class HumanPrediction(object):
 
 		return action
 
+	def state_to_coor(self, state):
+		"""
+		Goes from 1D array value ot [x,y] in simulation
+		"""
+		return [state/self.sim_width, state%self.sim_width]
+
 	def sim_to_real_coord(self, sim_coord):
 		"""
 		Takes [x,y] coordinate in simulation frame and returns a rotated and 
@@ -482,6 +480,54 @@ class HumanPrediction(object):
 				interpolated_grid[i] = curr
 
 			return interpolated_grid
+
+	# ---- Visualization ---- #
+
+	def visualize_occugrid(self, time):
+		"""
+		Visualizes occupancy grid for all grids in time
+		"""
+
+		if self.occupancy_grids is not None:
+			marker = Marker()
+			marker.header.frame_id = "/world"
+			marker.header.stamp = rospy.Time.now()
+			marker.id = 0
+			marker.ns = "visualize"
+
+			marker.type = marker.CUBE_LIST
+			marker.action = marker.ADD
+
+			marker.scale.x = self.res
+			marker.scale.y = self.res
+			marker.scale.z = self.human_height
+			for t in range(time):
+				grid = self.interpolate_grid(t)
+
+				if grid is not None:
+					for i in range(len(grid)):
+						(row, col) = self.state_to_coor(i)
+						real_coord = self.sim_to_real_coord([row, col])
+
+						color = ColorRGBA()
+						color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
+						color.r = np.sqrt(grid[i])
+						color.g = np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0
+						color.b = 0.9*np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0 + 0.5*np.sqrt(grid[i])
+						if grid[i] < self.prob_thresh:
+							color.a = 0.0
+						marker.colors.append(color)
+
+						pt = Vector3()
+						pt.x = real_coord[0]
+						pt.y = real_coord[1]
+						pt.z = self.human_height/2.0
+						marker.points.append(pt)
+
+					#print "real_coord: ", real_coord
+					#print "coord prob: ", grid[i]
+					
+			self.grid_vis_pub.publish(marker)
 			
 	# ---- ROS Message Conversion ---- #
 
