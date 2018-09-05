@@ -5,71 +5,51 @@ ROS and crazyflie-integrated prediction of human motion.
 # Dependencies
 This repository depends on the ```pedestrian_prediction``` repository which may be found [here](https://github.com/sirspinach/pedestrian_prediction) and the ```crazyflie_clean``` package which may be found [here](https://github.com/HJReachability/crazyflie_clean).
 
-# Choosing where your human data comes from
-
-## Simulated human data
-Open up ```multi_sim.launch``` and uncomment human simulator:
+# Usage
+## Simulated Human Motion
+To run predictions with simulated human data, type:
 ```
-<node name="simulate_human1" pkg="crazyflie_human" type="sim_human.py" args="1" output="screen"/> 
-```
-and make sure the optitrack state estimator is commented out:
-```
-<!-- <node name="human_state_estimator1" pkg="crazyflie_human" type="human_state_estimator.py" args="1" output="screen"/> -->
+roslaunch crazyflie_human simulated_demo.launch
 ```
 
-## Real (Optitrack) human data
-Open up ```multi_sim.launch``` and uncomment the optitrack state estimator:
+### Changing the Simulated Human Model
+There are many ways to simulate human pedestrian data. This repository supports:
+* ```linear_human.py``` -- Human motion is simply a straight line between goals. Ignores obstacles. 
+* ```potential_field_human.py``` -- Human motion follows attractive-repuslive forces towards goals and away from obstacles.
+
+Once you know which simulation you want to use, open ```simulated_human_launcher.launch```. Change the simulation node to point to the appropriate python file. Now just rerun the simulated demo!
+
+## Real (Optitrack) Human Motion
+To run predictions with real human data, type:
 ```
-<node name="human_state_estimator1" pkg="crazyflie_human" type="human_state_estimator.py" args="1" output="screen"/>
+roslaunch crazyflie_human real_demo.launch
 ```
-and make sure the simulated human data is commented out:
+## Changing the Number of Humans
+Open up either ```simulated_demo.launch``` or ```real_demo.launch```. To add another human into the launch file, simply add a new namespace for this human, following the convention:
 ```
-<!-- <node name="simulate_human1" pkg="crazyflie_human" type="sim_human.py" args="1" output="screen"/>  -->
+<arg name="humanN_namespace" default="humanN" />
+```
+then add a new human ID:
+```
+<arg name="humanN" default="N" />
+```
+then add a new human prediction node:
+```
+<group ns="$(arg humanN_namespace)">
+	<include file="$(find crazyflie_human)/launch/real_human_launcher.launch">
+		<arg name="human_number" value="$(arg humanN)" />
+		<arg name="beta" value="$(arg prediction_model)" />
+	</include>
+</group>
 ```
 
-# Running the code
-To run the human motion prediction code, type the following ROS command into your terminal:
-```
-roslaunch crazyflie_human multi_sim.launch beta:=adaptive
-```
-Arguments:
-* ```beta:=irrational``` uses low model confidence to generate human motion predictions
-* ```beta:=rational``` uses high model confidence to generate human motion predictions
-* ```beta:=adaptive``` adapts the confidence in the human predictions based on how well the human actions match the model
-
-# Changing the number of humans
-Two files are important when changing the number of humans:
-* ```/config/pedestrian_pred.yaml```: Edit the number of humans by changing the parameter:
-```
-num_humans: N
-```
-where N is the number of humans in your environment. For each human (numbered 1-N) make sure that they each have specified starts and goals:
+## Changing the Human Start and Goals
+Open ```/config/pedestrian_pred.yaml```. For each human (numbered 1-N) make sure that they each have specified starts and goals:
 ```
 humanN_real_start: [1.0,-1.0]
 humanN_real_goals: [[1.0, 2.0], [2.0, 1.0]]
 ```
-
-* ```/launch/multi_sim.launch```: Add in a human-prediction node for each human by adding in a line for each human:
-```
-<node name="human_prediction1" pkg="crazyflie_human" type="human_pred.py" args="1" output="screen"/> 
-<node name="human_prediction2" pkg="crazyflie_human" type="human_pred.py" args="2" output="screen"/> 
-....
-<node name="human_predictionN" pkg="crazyflie_human" type="human_pred.py" args="N" output="screen"/> 
-```
-If running with simulated human data, add in a simulated human node for each human:
-```
-<node name="simulate_human1" pkg="crazyflie_human" type="sim_human.py" args="1" output="screen"/> 
-<node name="simulate_human2" pkg="crazyflie_human" type="sim_human.py" args="2" output="screen"/> 
-...
-<node name="simulate_humanN" pkg="crazyflie_human" type="sim_human.py" args="N" output="screen"/> 
-```
-If running with real (optitrack) human data, add in a human state estimator for each human:
-```
-<node name="human_state_estimator1" pkg="crazyflie_human" type="human_state_estimator.py" args="1" output="screen"/> 
-<node name="human_state_estimator2" pkg="crazyflie_human" type="human_state_estimator.py" args="2" output="screen"/> 
-...
-<node name="human_state_estimatorN" pkg="crazyflie_human" type="human_state_estimator.py" args="N" output="screen"/> 
-```
+These are used for predicting future states of the human, and are used by the human simulator to move the simulated human through the environment. 
 
 # Visualization
 To see the visualizations of the human, the predictions, and the modeled goals, run RVIZ:
