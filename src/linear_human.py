@@ -8,15 +8,16 @@ from visualization_msgs.msg import Marker
 import time
 import sys
 
-class SimHuman(object):	
+class LinearHuman(object):	
 	"""
 	This class simulates mocap data of a human moving around a space.
-	Publishes the human's (x,y,theta) data to ROS topic /human_pose
+	The human always moves in a straight line from start to goal, 
+	regardless of the environment or obstacles. 
 	"""
 
 	def __init__(self):
 
-		rospy.init_node('sim_human', anonymous=True)
+		rospy.init_node('linear_human', anonymous=True)
 
 		# load all the prediction params and setup subscriber/publishers
 		self.load_parameters()
@@ -159,4 +160,4 @@ class SimHuman(object):
 						int(round((self.real_upper[1] - real_coord[1])/self.res))]
 
 if __name__ == '__main__':
-	human = SimHuman()
+	human = LinearHuman()
