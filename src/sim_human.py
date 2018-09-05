@@ -37,7 +37,6 @@ class SimHuman(object):
 		"""
 		# store which human occu grid we are computing
 		self.human_number = str(rospy.get_param("human_number"))
-		print "HUMAN NUMBER IS", self.human_number
 
 		# --- real-world params ---# 
 
