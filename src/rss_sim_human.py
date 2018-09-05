@@ -50,6 +50,19 @@ class SimHuman(object):
 		self.real_lower = low
 		self.real_upper = up
 
+		# get which experimental setup we are in
+		#self.exp = rospy.get_param("exp")
+
+		# (real-world) start and goal locations 
+		if self.exp == "coffee":
+			self.real_start = rospy.get_param("pred/coffee_real_start") 
+			self.real_goals = rospy.get_param("pred/coffee_real_goals")
+		elif self.exp == "triangle":
+			self.real_start = rospy.get_param("pred/triangle_real_start") 
+			self.real_goals = rospy.get_param("pred/triangle_real_goals")
+		else:
+			rospy.signal_shutdown("Experiment type is not valid!")
+
 		# (real-world) start and goal locations 
 		self.real_start = rospy.get_param("pred/human"+self.human_number+"_real_start")
 		self.real_goals = rospy.get_param("pred/human"+self.human_number+"_real_goals")
@@ -125,6 +138,9 @@ class SimHuman(object):
 			target_pos = np.array(self.real_start)
 		else:
 			curr_waypt_idx = int(curr_time/self.step_time)
+			#print "curr time: ", curr_time
+			#print "step time: ", self.step_time
+			#print "curr idx: ", curr_waypt_idx
 			prev = np.array(waypts[curr_waypt_idx])
 			next = np.array(waypts[curr_waypt_idx+1])		
 			ti = self.waypt_times[curr_waypt_idx]

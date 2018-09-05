@@ -1,3 +1,7 @@
+# planner
+#   roslaunch meta_planner coffee.launch prob_thresh:=0.01 collision_check_resolution:=0.33 grid_resolution:=0.33 > debug.txt
+# simulation
+#   roslaunch crazyflie_human sim.launch exp:=coffee beta:=irrational file:="coffee/sylvia_nocoffee"
 state:
 
   # Upper and lower bounds for experimental space (meters). [x, y, z]
@@ -6,12 +10,15 @@ state:
 
 pred:
 
-  # Start position of human(s) and list of potential goal locations
-  human1_real_start: [1.63, 0.46] 
-  human1_real_goals: [[-1.44, 0.44]] 
+  # Number of humans in the space that you want to do prediction for
+  num_humans: 2
 
-  human2_real_start: [-1.02, -0.79] 
-  human2_real_goals: [[0.14, 1.60]] 
+  # Start position of human(s) and list of potential goal locations
+  human1_real_start: [1.63, 0.46] #[1.61,-1.02]
+  human1_real_goals: [[-1.44, 0.44]] #[[1.0, 2.60]]
+
+  human2_real_start: [-1.02, -0.79] #[-1.0,-1.02]
+  human2_real_goals: [[0.14, 1.60]] #[[-0.17, 2.60], [-2.0, 0.78]]
 
   # color coding for human visualization (RGB)
   human1_color: [1.0, 0.0, 0.0]
@@ -20,6 +27,18 @@ pred:
   # Dimensions of the prediction map
   sim_height: 26
   sim_width: 26
+
+  # [ DEPRECATED ]
+  # Start position of human and list of potential goal locations
+  # TRIANGLE EXPERIMENT
+  triangle_real_start: [1.61,-1.02]
+  triangle_real_goals: [[-0.17, 2.60], [-2.0, 0.78]]
+  
+  # COFFEE EXPERIMENT
+  #   real_start: [1.61,-1.02]
+  #   real_goals: [[-0.17, 2.60]]
+  coffee_real_start: [1.61,-1.02]
+  coffee_real_goals: [[-0.17, 2.60]]
 
   # Resolution, ex. (real meters)/(sim dim-1) (m/cell)
   resolution: 0.1464 

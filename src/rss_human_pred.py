@@ -55,10 +55,21 @@ class HumanPrediction(object):
 		rate = rospy.Rate(100) 
 
 		while not rospy.is_shutdown():
+			if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+				line = raw_input()
+				break
+
 			# plot start/goal markers for visualization
+			# self.start_pub.publish(self.state_to_marker(xy=self.real_start, color=[0.0, 1.0, 0.0]))
 			self.goal_pub.publish(marker_array)
 
 			rate.sleep()
+
+		#time_file = "/home/hysys9/crazyflie_human_ws/src/crazyflie_human/src/human"+self.human_number+"times.p"
+		#pred_file = "/home/hysys9/crazyflie_human_ws/src/crazyflie_human/src/human"+self.human_number+"pred_times.p"
+		#pickle.dump(self.times, open(time_file, 'wb'))
+		#pickle.dump(self.pred_times, open(pred_file, 'wb'))
+		#print "Write human_pred debugging info to files."
 
 	def load_parameters(self):
 		"""
@@ -117,6 +128,9 @@ class HumanPrediction(object):
 		self.real_lower = low
 		self.real_upper = up
 
+		# get which experimental setup we are in
+		#self.exp = rospy.get_param("exp")
+
 		# (real-world) start and goal locations 
 		self.real_start = rospy.get_param("pred/human"+self.human_number+"_real_start")
 		self.real_goals = rospy.get_param("pred/human"+self.human_number+"_real_goals")
@@ -142,6 +156,11 @@ class HumanPrediction(object):
 		# compute the timestep (seconds/cell)
 		self.deltat = self.res/self.human_vel
 
+		# debugging variables
+		self.start_t = None
+		self.times = None
+		self.pred_times = None 
+
 		# TODO This is for debugging.
 		print "----- Running prediction for one human : -----"
 		print "	- human: ", self.human_number
@@ -159,15 +178,16 @@ class HumanPrediction(object):
 		self.human_sub = rospy.Subscriber('/human_pose'+self.human_number, PoseStamped, 
 											self.human_state_callback, queue_size=1)
 
-		# occupancy grid publisher & small publishers for visualizing the goals
+		# occupancy grid publisher & small publishers for visualizing the start/goal
 		self.occu_pub = rospy.Publisher('/occupancy_grid_time'+self.human_number, 
 			OccupancyGridTime, queue_size=1)
 		self.beta_pub = rospy.Publisher('/beta_topic'+self.human_number, 
 			Float32, queue_size=1)
 		self.goal_pub = rospy.Publisher('/goal_markers'+self.human_number, MarkerArray, queue_size=10)
+		self.start_pub = rospy.Publisher('/start_marker', Marker, queue_size=10)
 		self.grid_vis_pub = rospy.Publisher('/occu_grid_marker'+self.human_number, 
 			Marker, queue_size=10)
-		self.human_marker_pub = rospy.Publisher('/human_marker'+self.human_number, 
+		self.marker_pub = rospy.Publisher('/human_marker'+self.human_number, 
 			Marker, queue_size=10)
 
 	# ---- Inference Functionality ---- #
@@ -204,8 +224,30 @@ class HumanPrediction(object):
 			# infer the new human occupancy map from the current state
 			self.infer_occupancies() 
 	
+			# --- DEBUGGING --- #
+
+			if self.times is None or self.start_t is None:
+				self.start_t = rospy.Time().now()
+				self.times = [0.0]
+			else: 
+				t = rospy.Time().now().to_sec() - self.start_t.to_sec()
+				list.append(self.times, t)
+
 			# update human pose marker
-			self.human_marker_pub.publish(self.pose_to_marker(xypose, color=self.color))
+			self.marker_pub.publish(self.pose_to_marker(xypose, color=self.color))
+
+			e = rospy.Time().now()
+			total_pred_runtime = (e.to_sec()-s.to_sec())
+
+			if self.pred_times is None:
+				self.pred_times = [total_pred_runtime]
+			else:
+				list.append(self.pred_times, total_pred_runtime)
+
+			# --- DEBUGGING --- #
+
+			#print "time to infer occupancies for H", self.human_number, ": ", (e.to_sec()-s.to_sec())
+			#print "AVERAGE time to infer occupancies for H", self.human_number, ": ", self.total_pred_runtime/self.num_timesamples
 
 			# publish occupancy grid list
 			if self.occupancy_grids is not None:
@@ -256,28 +298,36 @@ class HumanPrediction(object):
 											np.array([sim_newstate]), 0)
 
 
+	# TODO we need to have beta updated over time, and have a beta for each goal
 	def infer_occupancies(self):
 		"""
 		Using the current trajectory data, recompute a new occupancy grid
-		for where the human might be.
+		for where the human might be
 		"""
 		if self.real_human_traj is None or self.sim_human_traj is None:
 			print "Can't infer occupancies -- human hasn't appeared yet!"
 			return 
 
-		# Get list of goals in 2D 
-		dest_list = [self.gridworld.coor_to_state(g[0], g[1]) for g in self.sim_goals]
+		#if len(self.sim_human_traj) < 2:
+		#	print "Not inferring occupancy -- human hasn't moved from first gridcell yet!"
+		#	return 
 
-		# Convert the human trajectory points from real-world to 2D grid values. 
+		dest_list = [self.gridworld.coor_to_state(g[0], g[1]) for g in self.sim_goals]
 		traj = [self.real_to_sim_coord(x, round_vals=False) for x in self.real_human_traj] 
+
+		# returns all state probabilities for timesteps 0,1,...,T in a 2D array. 
+		# (with dimension (T+1) x (height x width)
+		# verbose_return=True --> (occupancy grid, betas, dest_probs)
+		#(self.occupancy_grids, self.betas, self.dest_probs) = 
+		#	inf.state.infer(self.gridworld, traj, dest_list, T=self.fwd_tsteps)
   
-  		# OPTION 1: The line below feeds in the entire human traj history so far
-  		# 			and does a single bulk Bayesian inference step.
+  		# The line below feeds in the entire human traj history so far
+  		# and does a single bulk Bayesian inference step.
 		# (self.occupancy_grids, self.beta_occu, self.dest_beta_prob) = inf.state.infer_joint(self.gridworld, 
 		# 	dest_list, self.betas, T=self.fwd_tsteps, use_gridless=True, traj=traj, verbose_return=True)
 
-		# OPTION 2: The line below feeds in the last human (s,a) pair and previous posterior
-		# 			and does a recursive Bayesian update.
+		# The line below feeds in the last human (s,a) pair and previous posterior
+		# and does a recursive Bayesian update.
 		(self.occupancy_grids, self.beta_occu, self.dest_beta_prob) = inf.state.infer_joint(self.gridworld, 
 			dest_list, self.betas, T=self.fwd_tsteps, use_gridless=True, priors=self.dest_beta_prob,
 			traj=traj[-2:], epsilon_dest=self.epsilon_dest, epsilon_beta=self.epsilon_beta, verbose_return=True)
@@ -286,7 +336,7 @@ class HumanPrediction(object):
 
 	def traj_to_state_action(self):
 		"""
-		Converts the measured state-based sim_human_traj into (state, action) traj.
+		Converts the measured state-based sim_human_traj into (state, action) traj
 		"""		
 		prev = self.sim_human_traj[0]		
 		states = np.array([prev])
@@ -420,6 +470,12 @@ class HumanPrediction(object):
 				prev = low_grid[i]
 				next = high_grid[i]
 				curr = prev + (next - prev) *((future_time - prev_t) / (next_t - prev_t))
+				if curr > self.prob_thresh:
+					print "At location", self.gridworld.state_to_coor(i)
+					print "(prev_t, next_t): ", (prev_t, next_t)
+					print "prev: ", prev
+					print "next: ", next
+					print "curr: ", curr
 				interpolated_grid[i] = curr
 
 			return interpolated_grid
@@ -469,6 +525,9 @@ class HumanPrediction(object):
 						pt.y = real_coord[1]
 						pt.z = self.human_height/2.0
 						marker.points.append(pt)
+
+					#print "real_coord: ", real_coord
+					#print "coord prob: ", grid[i]
 					
 			self.grid_vis_pub.publish(marker)
 			

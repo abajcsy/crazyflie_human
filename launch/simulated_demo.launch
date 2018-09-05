@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+
+<launch>
+	<arg name="human1_namespace" default="human1" />
+	<arg name="human2_namespace" default="human2" />
+
+	<!-- Human IDs. -->	
+	<arg name="human1" default="1" />
+	<arg name="human2" default="2" />
+
+	<!-- Prediction model. -->
+	<arg name="prediction_model" default="adaptive" />
+
+	<!-- ========================== Human 1. ========================== -->
+	<group ns="$(arg human1_namespace)">
+		<include file="$(find crazyflie_human)/launch/simulated_human_launcher.launch">
+			<arg name="human_number" value="$(arg human1)" />
+			<arg name="beta" value="$(arg prediction_model)" />
+		</include>
+	</group>
+
+	<!-- ========================== Human 2. ========================== -->
+	 <group ns="$(arg human2_namespace)">
+		<include file="$(find crazyflie_human)/launch/simulated_human_launcher.launch">
+			<arg name="human_number" value="$(arg human2)" />
+			<arg name="beta" value="$(arg prediction_model)" />
+		</include>
+	</group>
+</launch>
