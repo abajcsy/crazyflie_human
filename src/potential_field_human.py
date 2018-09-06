@@ -57,15 +57,14 @@ class PotentialFieldHuman(object):
 		self.real_goals = rospy.get_param("pred/human"+self.human_number+"_real_goals")
 
 		# ======== NOTE ======== #
-		# For now, assume that there is only one goal that
-		# the human is being "attracted" to with the potential
-		# field.
+		# For now, assume that there is only one goal that the human is being 
+		# "attracted" to with the potential field.
 		# ======== NOTE ======== #
 
 		# color to use to represent this human
 		self.color = rospy.get_param("pred/human"+self.human_number+"_color")
 
-		# ======== EDIT ======== #
+		# ======== EDIT BEGIN ======== #
 
 		# trajectory info
 		self.start_T = rospy.Time.now().secs
@@ -73,7 +72,7 @@ class PotentialFieldHuman(object):
 		self.step_time = self.final_T/(len(self.real_goals)+1) 
 		self.waypt_times = [i*self.step_time for i in range(len(self.real_goals)+2)] # include start and end
 
-		# ======== EDIT ======== #
+		# ======== EDIT END ======== #
 
 		self.human_pose = None
 
@@ -91,9 +90,10 @@ class PotentialFieldHuman(object):
 		self.prev_pose = self.real_start
 
 		# get the total number of humans in the environment
-		self.total_number_of_humans = rospy.get_param("total_number_of_humans")
+		self.total_number_of_humans = rospy.get_param("pred/total_number_of_humans")
 
-		# ======== EDIT ======== #
+		# ======== EDIT BEGIN ======== #
+
 		# You will probably need some variables to 
 		# store state information about the other agents
 		# in the environment.(E.g. if this class is 
@@ -102,7 +102,8 @@ class PotentialFieldHuman(object):
 		#
 		# Dictionary mapping from human pose topic to current pose
 		self.other_human_poses = {}
-		# ======== EDIT ======== #
+
+		# ======== EDIT END ======== #
 
 	def register_callbacks(self):
 		"""
@@ -110,29 +111,32 @@ class PotentialFieldHuman(object):
 		"""
 		self.state_pub = rospy.Publisher('/human_pose'+self.human_number, PoseStamped, queue_size=10)
 
-		# ======== EDIT ======== #
-		# You will probably need some subscribers to 
-		# the state information about the other agents
-		# in the environment. (E.g. if this class is 
-		# simulating human1, it needs to know about 
-		# human2, robot2, robot3, ...)
-		# 
-		# Ideally, we'd like to spawn of self.total_number_of_humans
-		# subscribers, all of which use human_pose_callback(). 
-		# ======== EDIT ======== #
+		# Create a subscriber for each other human in the environment.
+		for ii in range(1, self.total_number_of_humans+1):
+			if ii is not self.human_number:
+				topic = "/human_pose"+str(ii)
+
+				# Lambda function allows us to call a callback
+				# with more arguments than normally intended. 
+				def curried_callback(t):
+					return lambda m: self.human_pose_callback(t, m)
+
+				rospy.Subscriber(topic, PoseStamped, curried_callback(topic), queue_size=1)
+
+		# ======== NOTE ======== #
+		# For now, just focus on humans, but eventually 
+		# we will need the same kind of code block as above
+		# to subscribe to the state information about the robots too. 
+		# ======== NOTE ======== #
 
 	def human_pose_callback(self, topic, msg):
 		"""
 		This callback stores the most recent human pose for
 		any given human. 
 		"""
-		self.other_human_poses[topic] = msg.pose
 
-		# ======== EDIT ======== #
-
-		raise NotImplementedError
-
-		# ======== EDIT ======== #
+		# Store the PoseStamped message of the other human in the dictionary.
+		self.other_human_poses[topic] = msg
 
 	def pose_to_marker(self, color=[1.0, 0.0, 0.0]):
 		"""
@@ -170,14 +174,15 @@ class PotentialFieldHuman(object):
 		"""
 		Gets the next position of the human that is moving to
 		a goal, and reacting to obstacles following a potential 
-		field model. 
+		field model. Sets self.human_pose to be a PoseStamped 
+		with the next position.
 		"""
 
-		# ======== EDIT ======== #
+		# ======== EDIT BEGIN ======== #
 
 		raise NotImplementedError
 
-		# ======== EDIT ======== #
+		# ======== EDIT END ======== #
 
 	def sim_to_real_coord(self, sim_coord):
 		"""
