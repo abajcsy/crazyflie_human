@@ -82,11 +82,16 @@ class PotentialFieldHuman(object):
 		# resolution (m/cell)
 		self.res = rospy.get_param("pred/resolution")
 
+		# store the 2D start and goal
 		self.sim_start = self.sim_to_real_coord(self.real_start) 
 		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
-		self.human_height = rospy.get_param("pred/human_height")
 
+		# store the human's height (visualization) and the previous pose
+		self.human_height = rospy.get_param("pred/human_height")
 		self.prev_pose = self.real_start
+
+		# get the total number of humans in the environment
+		self.total_number_of_humans = rospy.get_param("total_number_of_humans")
 
 		# ======== EDIT ======== #
 		# You will probably need some variables to 
@@ -94,6 +99,9 @@ class PotentialFieldHuman(object):
 		# in the environment.(E.g. if this class is 
 		# simulating human1, it needs to know about 
 		# human2, robot2, robot3, ...)
+		#
+		# Dictionary mapping from human pose topic to current pose
+		self.other_human_poses = {}
 		# ======== EDIT ======== #
 
 	def register_callbacks(self):
@@ -108,6 +116,22 @@ class PotentialFieldHuman(object):
 		# in the environment. (E.g. if this class is 
 		# simulating human1, it needs to know about 
 		# human2, robot2, robot3, ...)
+		# 
+		# Ideally, we'd like to spawn of self.total_number_of_humans
+		# subscribers, all of which use human_pose_callback(). 
+		# ======== EDIT ======== #
+
+	def human_pose_callback(self, topic, msg):
+		"""
+		This callback stores the most recent human pose for
+		any given human. 
+		"""
+		self.other_human_poses[topic] = msg.pose
+
+		# ======== EDIT ======== #
+
+		raise NotImplementedError
+
 		# ======== EDIT ======== #
 
 	def pose_to_marker(self, color=[1.0, 0.0, 0.0]):

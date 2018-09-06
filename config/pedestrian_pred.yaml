@@ -5,6 +5,9 @@ state:
   upper: [1.66, 2.62, 2.0] 
 
 pred:
+  # Total number of humans that you will be simulating. Used 
+  # by potential_field_human.py to avoid other humans.
+  total_number_of_humans: 2
 
   # Start position of human(s) and list of potential goal locations
   human1_real_start: [1.63, 0.46] 
