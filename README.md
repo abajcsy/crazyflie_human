@@ -6,6 +6,12 @@ ROS and crazyflie-integrated prediction of human motion.
 This repository depends on the ```pedestrian_prediction``` repository which may be found [here](https://github.com/sirspinach/pedestrian_prediction) and the ```crazyflie_clean``` package which may be found [here](https://github.com/HJReachability/crazyflie_clean).
 
 # Usage
+This repository needs to be placed inside of a ROS workspace. Clone it inside of the ```src/``` folder in your workspace:
+```
+cd catkin_ws/src/
+git clone https://github.com/abajcsy/crazyflie_human
+```
+
 ## Simulated Human Motion
 To run predictions with simulated human data, type:
 ```

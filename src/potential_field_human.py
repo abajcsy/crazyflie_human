@@ -65,13 +65,9 @@ class PotentialFieldHuman(object):
 		self.color = rospy.get_param("pred/human"+self.human_number+"_color")
 
 		# ======== EDIT BEGIN ======== #
-
-		# trajectory info
+		# Store information you need about generating potential field motions.
+		# E.g. you can store the start time
 		self.start_T = rospy.Time.now().secs
-		self.final_T = 60.0
-		self.step_time = self.final_T/(len(self.real_goals)+1) 
-		self.waypt_times = [i*self.step_time for i in range(len(self.real_goals)+2)] # include start and end
-
 		# ======== EDIT END ======== #
 
 		self.human_pose = None
