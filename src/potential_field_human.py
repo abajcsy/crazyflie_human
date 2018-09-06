@@ -70,16 +70,13 @@ class PotentialFieldHuman(object):
 		self.start_T = rospy.Time.now().secs
 		# ======== EDIT END ======== #
 
+		# PoseStamped ROS message
 		self.human_pose = None
 
 		# --- simulation params ---# 
 
 		# resolution (m/cell)
 		self.res = rospy.get_param("pred/resolution")
-
-		# store the 2D start and goal
-		self.sim_start = self.sim_to_real_coord(self.real_start) 
-		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
 
 		# store the human's height (visualization) and the previous pose
 		self.human_height = rospy.get_param("pred/human_height")

@@ -25,5 +25,5 @@
 			<arg name="human_number" value="$(arg human2)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>-0.56
+	</group>-->
 </launch>

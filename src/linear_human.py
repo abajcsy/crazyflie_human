@@ -68,9 +68,6 @@ class LinearHuman(object):
 		# resolution (m/cell)
 		self.res = rospy.get_param("pred/resolution")
 
-		self.sim_start = self.sim_to_real_coord(self.real_start) 
-		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
-
 		self.human_height = rospy.get_param("pred/human_height")
 
 		self.prev_pose = self.real_start
