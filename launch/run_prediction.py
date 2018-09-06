@@ -34,7 +34,7 @@ signal.signal(signal.SIGINT, sigint_handler)
 for ii in range(total_number_of_humans):
     # Run one process for each human
     human_ID = "human_number:="+str(ii+1)
-    print human_ID
-    human_launch[ii] = subprocess.Popen(["roslaunch", "crazyflie_human", "simulated_human_launcher.launch", human_ID])
+    #human_launch[ii] = subprocess.Popen(["roslaunch", "crazyflie_human", "simulated_human_launcher.launch", human_ID])
+    human_launch[ii] = subprocess.Popen(["roslaunch", "crazyflie_human", "simulated_demo.launch", "human1:="+str(ii+1), "human1_namespace:=human"+str(ii+1)])
 
 signal.pause()

@@ -19,11 +19,11 @@
 		</include>
 	</group>
 
-	<!-- ========================== Human 2. ========================== -->
+	<!-- ========================== Human 2. ========================== 
 	 <group ns="$(arg human2_namespace)">
 		<include file="$(find crazyflie_human)/launch/simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human2)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 </launch>
