@@ -28,7 +28,7 @@ class HumanPrediction(object):
 	It stores:
 		- human's tracked trajectory 
 		- occupancy grid of states human is likely to go to
-		- moving obstacle representing human future motion
+		- moving obstacle representing human future motionr
 	"""
 
 	def __init__(self):
@@ -72,7 +72,8 @@ class HumanPrediction(object):
 		self.sim_width = int(rospy.get_param("pred/sim_width"))
 
 		# resolution (m/cell)
-		self.res = rospy.get_param("pred/resolution")
+		self.res_x = rospy.get_param("pred/resolution_x")
+		self.res_y = rospy.get_param("pred/resolution_y")
 
 		# simulation forward prediction parameters
 		self.fwd_tsteps = rospy.get_param("pred/fwd_tsteps")
@@ -140,7 +141,7 @@ class HumanPrediction(object):
 		self.human_vel = rospy.get_param("pred/human_vel")
 
 		# compute the timestep (seconds/cell)
-		self.deltat = self.res/self.human_vel
+		self.deltat = self.res_x/self.human_vel
 
 		# TODO This is for debugging.
 		print "----- Running prediction for one human : -----"
@@ -215,7 +216,7 @@ class HumanPrediction(object):
 			# adjust the deltat based on the observed measurements
 			if self.prev_pos is not None:
 				self.human_vel = np.linalg.norm((np.array(xypose) - np.array(self.prev_pos)))/time_diff
-				self.deltat = np.minimum(np.maximum(self.res/self.human_vel,0.05),0.2)
+				self.deltat = np.minimum(np.maximum(self.res_x/self.human_vel,0.05),0.2)
 
 			self.prev_pos = xypose	
 			
@@ -355,8 +356,8 @@ class HumanPrediction(object):
 		Takes [x,y] coordinate in simulation frame and returns a rotated and 
 		shifted	value in the ROS coordinates
 		"""
-		return [sim_coord[0]*self.res + self.real_lower[0], 
-				self.real_upper[1] - sim_coord[1]*self.res]
+		return [sim_coord[0]*self.res_x + self.real_lower[0], 
+				self.real_upper[1] - sim_coord[1]*self.res_y]
 
 	def real_to_sim_coord(self, real_coord, round_vals=True):
 		"""
@@ -367,11 +368,11 @@ class HumanPrediction(object):
 					False - gives a floating point value on the grid cell
 		"""
 		if round_vals:
-			x = round((real_coord[0] - self.real_lower[0])/self.res)
-			y = round((self.real_upper[1] - real_coord[1])/self.res)
+			x = round((real_coord[0] - self.real_lower[0])/self.res_x)
+			y = round((self.real_upper[1] - real_coord[1])/self.res_y)
 		else:
-			x = (real_coord[0] - self.real_lower[0])/self.res
-			y = (self.real_upper[1] - real_coord[1])/self.res
+			x = (real_coord[0] - self.real_lower[0])/self.res_x
+			y = (self.real_upper[1] - real_coord[1])/self.res_y
 
 		i_coord = np.minimum(self.sim_height-1, np.maximum(0.0,x));
 		j_coord = np.minimum(self.sim_width-1, np.maximum(0.0,y));
@@ -444,8 +445,8 @@ class HumanPrediction(object):
 			marker.type = marker.CUBE_LIST
 			marker.action = marker.ADD
 
-			marker.scale.x = self.res
-			marker.scale.y = self.res
+			marker.scale.x = self.res_x
+			marker.scale.y = self.res_y
 			marker.scale.z = self.human_height
 			for t in range(time):
 				grid = self.interpolate_grid(t)
@@ -492,7 +493,7 @@ class HumanPrediction(object):
 			grid_msg.header.frame_id = "/world"
 
 			# .info is a nav_msgs/MapMetaData message. 
-			grid_msg.resolution = self.res
+			grid_msg.resolution = self.res_x
 			grid_msg.width = self.sim_width
 			grid_msg.height = self.sim_height
 
@@ -524,9 +525,9 @@ class HumanPrediction(object):
 		marker.action = marker.ADD
 		marker.pose.orientation.w = 1
 		marker.pose.position.z = 0
-		marker.scale.x = self.res
-		marker.scale.y = self.res
-		marker.scale.z = self.res
+		marker.scale.x = self.res_x
+		marker.scale.y = self.res_y
+		marker.scale.z = self.res_x
 		marker.color.a = 1.0
 		marker.color.r = color[0]
 		marker.color.g = color[1]
@@ -548,8 +549,8 @@ class HumanPrediction(object):
 		marker.action = marker.ADD
 		marker.pose.orientation.w = 1
 		marker.pose.position.z = 0.1
-		marker.scale.x = self.res
-		marker.scale.y = self.res
+		marker.scale.x = self.res_x
+		marker.scale.y = self.res_y
 		marker.scale.z = self.human_height + 0.001
 		marker.color.a = 1.0
 		marker.color.r = color[0]

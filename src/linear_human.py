@@ -4,7 +4,7 @@ import rospy
 import numpy as np
 from std_msgs.msg import String
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 import time
 import sys
 
@@ -23,13 +23,26 @@ class LinearHuman(object):
 		self.load_parameters()
 		self.register_callbacks()
 
+		#make a marker array for all the goals
+		marker_array = MarkerArray()
+		for g in self.real_goals:
+			marker = self.state_to_marker(xy=g, color=self.color)
+			marker_array.markers.append(marker)
+
+		# Re-number the marker IDs
+		id = 0
+		for m in marker_array.markers:
+			m.id = id
+			id += 1
+
 		rate = rospy.Rate(100)
 
 		while not rospy.is_shutdown():
 			t = rospy.Time.now().secs - self.start_T
 			self.update_pose(t)
 			self.state_pub.publish(self.human_pose)
-			#self.marker_pub.publish(self.pose_to_marker(color=self.color))
+			self.marker_pub.publish(self.pose_to_marker(color=self.color))
+			self.goal_pub.publish(marker_array)
 			rate.sleep()
 
 	def load_parameters(self):
@@ -66,7 +79,8 @@ class LinearHuman(object):
 		# --- simulation params ---# 
 
 		# resolution (m/cell)
-		self.res = rospy.get_param("pred/resolution")
+		self.res_x = rospy.get_param("pred/resolution_x")
+		self.res_y = rospy.get_param("pred/resolution_y")
 
 		self.human_height = rospy.get_param("pred/human_height")
 
@@ -76,8 +90,34 @@ class LinearHuman(object):
 		"""
 		Sets up all the publishers/subscribers needed.
 		"""
+		self.goal_pub = rospy.Publisher('/goal_markers'+self.human_number, MarkerArray, queue_size=10)
 		self.state_pub = rospy.Publisher('/human_pose'+self.human_number, PoseStamped, queue_size=10)
-		#self.marker_pub = rospy.Publisher('/human_marker'+self.human_number, Marker, queue_size=10)
+		self.marker_pub = rospy.Publisher('/human_marker'+self.human_number, Marker, queue_size=10)
+
+	def state_to_marker(self, xy=[0,0], color=[1.0,0.0,0.0]):
+		"""
+		Converts xy position to marker type to vizualize human
+		"""
+		marker = Marker()
+		marker.header.frame_id = "/world"
+		marker.header.stamp = rospy.Time().now()
+
+		marker.type = marker.SPHERE
+		marker.action = marker.ADD
+		marker.pose.orientation.w = 1
+		marker.pose.position.z = 0
+		marker.scale.x = self.res_x
+		marker.scale.y = self.res_y
+		marker.scale.z = self.res_x
+		marker.color.a = 1.0
+		marker.color.r = color[0]
+		marker.color.g = color[1]
+		marker.color.b = color[2]
+
+		marker.pose.position.x = xy[0]
+		marker.pose.position.y = xy[1]
+
+		return marker
 
 	def pose_to_marker(self, color=[1.0, 0.0, 0.0]):
 		"""
@@ -90,8 +130,8 @@ class LinearHuman(object):
 		marker.action = marker.ADD
 		marker.pose.orientation.w = 1
 		marker.pose.position.z = 0.1
-		marker.scale.x = self.res
-		marker.scale.y = self.res
+		marker.scale.x = self.res_x
+		marker.scale.y = self.res_y
 		marker.scale.z = self.human_height
 		marker.color.a = 1.0		
 		marker.color.r = color[0]
@@ -145,16 +185,16 @@ class LinearHuman(object):
 		Takes [x,y] coordinate in simulation frame and returns a rotated and 
 		shifted	value in the ROS coordinates
 		"""
-		return [sim_coord[0]*self.res + self.real_lower[0], 
-						self.real_upper[1] - sim_coord[1]*self.res]
+		return [sim_coord[0]*self.res_x + self.real_lower[0], 
+						self.real_upper[1] - sim_coord[1]*self.res_y]
 
 	def real_to_sim_coord(self, real_coord):
 		"""
 		Takes [x,y] coordinate in the ROS real frame, and returns a rotated and 
 		shifted	value in the simulation frame
 		"""
-		return [int(round((real_coord[0] - self.real_lower[0])/self.res)),
-						int(round((self.real_upper[1] - real_coord[1])/self.res))]
+		return [int(round((real_coord[0] - self.real_lower[0])/self.res_x)),
+						int(round((self.real_upper[1] - real_coord[1])/self.res_y))]
 
 if __name__ == '__main__':
 	human = LinearHuman()
