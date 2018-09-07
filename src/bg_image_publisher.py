@@ -1,5 +1,6 @@
 #!/usr/bin/env python  
 import rospy
+import os
 import math
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
@@ -21,7 +22,9 @@ if __name__ == '__main__':
 	pose_pub = rospy.Publisher(pub_topic, Marker, queue_size=1)
 
 	# Read the background image.
-	image = mpimg.imread("../config/testbed_downsized.png")
+	full_path = os.path.dirname(os.path.realpath(__file__))
+	print full_path
+	image = mpimg.imread(full_path+"/../config/testbed_downsized.png")
 	height = 300
 	width = 233
 
