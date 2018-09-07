@@ -28,7 +28,7 @@ pred:
   resolution: 0.1464 
 
   # Num timesteps into the future to predict
-  fwd_tsteps: 10
+  fwd_tsteps: 20
 
   # Initial betas depending on model
   beta_adaptive: [0.1, 0.3, 1.0, 3.0, 10.0]
