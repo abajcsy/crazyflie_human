@@ -13,7 +13,7 @@
 
 	<!-- simulate human walking around -->
 	<node name="simulate_human1" pkg="crazyflie_human" type="sim_human.py" args="1" output="screen"/> 
-	<!-- <node name="simulate_human2" pkg="crazyflie_human" type="sim_human.py" args="2" output="screen"/>  -->
+	<!-- <node name="simulate_human2" pkg="crazyflie_human" type="sim_human.py" args="2" output="screen"/> -->  
 
 	<!-- read data from optitrack of human walking around 
 	<node name="human_state_estimator1" pkg="crazyflie_human" type="human_state_estimator.py" args="1" output="screen"/> 
