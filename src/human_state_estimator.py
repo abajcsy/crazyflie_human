@@ -6,13 +6,9 @@ import geometry_msgs.msg
 import sys
 
 if __name__ == '__main__':
-	if len(sys.argv) < 4:
-		human_num = "1"
-		print "[human_state_estimator]: no human_num arg specified. Setting human_num = 1."
-	else:
-		human_num = sys.argv[1]
-
 	rospy.init_node('human_state_estimator')
+
+	human_num = str(rospy.get_param('human_number'))
 
 	listener = tf.TransformListener()
 
@@ -22,7 +18,7 @@ if __name__ == '__main__':
 	rate = rospy.Rate(100.0)
 	while not rospy.is_shutdown():
 		try:
-			hat_tf = '/vicon/hat/hat'+human_num
+			hat_tf = '/Human'+human_num+'/base_link'
 			(trans,rot) = listener.lookupTransform('/world', hat_tf, rospy.Time(0))
 		except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
 			continue

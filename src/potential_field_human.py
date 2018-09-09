@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import rospy
 import numpy as np
 from std_msgs.msg import String
@@ -8,18 +7,18 @@ from visualization_msgs.msg import Marker
 import time
 import sys
 
-class SimHuman(object):	
+class PotentialFieldHuman(object):
 	"""
-	This class simulates mocap data of a human moving around a space.
-	Publishes the human's (x,y,theta) data to ROS topic /human_pose
+	This class simulates a human pedestrian with an
+	Attractive-Repulsive Potential Field Method.
+
+	References: 
+		- Goodrich, M. A. "Potential Fields Tutorial". https://bit.ly/2LXAeIM
 	"""
 
-	def __init__(self, human_number=""):
+	def __init__(self):
 
-		rospy.init_node('sim_human', anonymous=True)
-
-		# store which human occu grid we are computing
-		self.human_number = human_number if human_number is not "" else "1"
+		rospy.init_node('potential_field_human', anonymous=True)
 
 		# load all the prediction params and setup subscriber/publishers
 		self.load_parameters()
@@ -28,16 +27,19 @@ class SimHuman(object):
 		rate = rospy.Rate(100)
 
 		while not rospy.is_shutdown():
+			# get current time and update the human's pose
 			t = rospy.Time.now().secs - self.start_T
 			self.update_pose(t)
 			self.state_pub.publish(self.human_pose)
-			#self.marker_pub.publish(self.pose_to_marker(color=self.color))
 			rate.sleep()
 
 	def load_parameters(self):
 		"""
-		Loads all the important paramters of the human sim
+		Loads all the important paramters of the human sim.
 		"""
+
+		# store which human occu grid we are computing
+		self.human_number = str(rospy.get_param("human_number"))
 
 		# --- real-world params ---# 
 
@@ -50,30 +52,25 @@ class SimHuman(object):
 		self.real_lower = low
 		self.real_upper = up
 
-		# get which experimental setup we are in
-		#self.exp = rospy.get_param("exp")
-
-		# (real-world) start and goal locations 
-		#if self.exp == "coffee":
-		#	self.real_start = rospy.get_param("pred/coffee_real_start") 
-		#	self.real_goals = rospy.get_param("pred/coffee_real_goals")
-		#elif self.exp == "triangle":
-		#	self.real_start = rospy.get_param("pred/triangle_real_start") 
-		#	self.real_goals = rospy.get_param("pred/triangle_real_goals")
-		#else:
-		#	rospy.signal_shutdown("Experiment type is not valid!")
-
 		# (real-world) start and goal locations 
 		self.real_start = rospy.get_param("pred/human"+self.human_number+"_real_start")
 		self.real_goals = rospy.get_param("pred/human"+self.human_number+"_real_goals")
 
+		# ======== NOTE ======== #
+		# For now, assume that there is only one goal that the human is being 
+		# "attracted" to with the potential field.
+		# ======== NOTE ======== #
+
 		# color to use to represent this human
 		self.color = rospy.get_param("pred/human"+self.human_number+"_color")
 
+		# ======== EDIT BEGIN ======== #
+		# Store information you need about generating potential field motions.
+		# E.g. you can store the start time
 		self.start_T = rospy.Time.now().secs
-		self.final_T = 60.0
-		self.step_time = self.final_T/(len(self.real_goals)+1) 
-		self.waypt_times = [i*self.step_time for i in range(len(self.real_goals)+2)] # include start and end
+		# ======== EDIT END ======== #
+
+		# PoseStamped ROS message
 		self.human_pose = None
 
 		# --- simulation params ---# 
@@ -81,19 +78,58 @@ class SimHuman(object):
 		# resolution (m/cell)
 		self.res = rospy.get_param("pred/resolution")
 
-		self.sim_start = self.sim_to_real_coord(self.real_start) 
-		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
-
+		# store the human's height (visualization) and the previous pose
 		self.human_height = rospy.get_param("pred/human_height")
-
 		self.prev_pose = self.real_start
+
+		# get the total number of humans in the environment
+		self.total_number_of_humans = rospy.get_param("pred/total_number_of_humans")
+
+		# ======== EDIT BEGIN ======== #
+
+		# You will probably need some variables to 
+		# store state information about the other agents
+		# in the environment.(E.g. if this class is 
+		# simulating human1, it needs to know about 
+		# human2, robot2, robot3, ...)
+		#
+		# Dictionary mapping from human pose topic to current pose
+		self.other_human_poses = {}
+
+		# ======== EDIT END ======== #
 
 	def register_callbacks(self):
 		"""
 		Sets up all the publishers/subscribers needed.
 		"""
 		self.state_pub = rospy.Publisher('/human_pose'+self.human_number, PoseStamped, queue_size=10)
-		#self.marker_pub = rospy.Publisher('/human_marker'+self.human_number, Marker, queue_size=10)
+
+		# Create a subscriber for each other human in the environment.
+		for ii in range(1, self.total_number_of_humans+1):
+			if ii is not self.human_number:
+				topic = "/human_pose"+str(ii)
+
+				# Lambda function allows us to call a callback
+				# with more arguments than normally intended. 
+				def curried_callback(t):
+					return lambda m: self.human_pose_callback(t, m)
+
+				rospy.Subscriber(topic, PoseStamped, curried_callback(topic), queue_size=1)
+
+		# ======== NOTE ======== #
+		# For now, just focus on humans, but eventually 
+		# we will need the same kind of code block as above
+		# to subscribe to the state information about the robots too. 
+		# ======== NOTE ======== #
+
+	def human_pose_callback(self, topic, msg):
+		"""
+		This callback stores the most recent human pose for
+		any given human. 
+		"""
+
+		# Store the PoseStamped message of the other human in the dictionary.
+		self.other_human_poses[topic] = msg
 
 	def pose_to_marker(self, color=[1.0, 0.0, 0.0]):
 		"""
@@ -126,38 +162,20 @@ class SimHuman(object):
 
 		return marker
 
+
 	def update_pose(self, curr_time):
 		"""
-		Gets the next desired position along trajectory
-		by interpolating between waypoints given the current t.
+		Gets the next position of the human that is moving to
+		a goal, and reacting to obstacles following a potential 
+		field model. Sets self.human_pose to be a PoseStamped 
+		with the next position.
 		"""
 
-		# for now, human trajectory always returns back to start
-		waypts = [self.real_start] + self.real_goals + [self.real_start]
-		if curr_time >= self.final_T:
-			target_pos = np.array(self.real_start)
-		else:
-			curr_waypt_idx = int(curr_time/self.step_time)
-			#print "curr time: ", curr_time
-			#print "step time: ", self.step_time
-			#print "curr idx: ", curr_waypt_idx
-			prev = np.array(waypts[curr_waypt_idx])
-			next = np.array(waypts[curr_waypt_idx+1])		
-			ti = self.waypt_times[curr_waypt_idx]
-			tf = self.waypt_times[curr_waypt_idx+1]
-			target_pos = (next - prev)*((curr_time-ti)/(tf - ti)) + prev	
-			# add in gaussian noise
-			#noisy_pos = self.prev_pose + np.random.normal(0,self.res, (2,))
-			self.prev_pose = target_pos #(target_pos + noisy_pos)*0.5	
+		# ======== EDIT BEGIN ======== #
 
-		self.human_pose = PoseStamped()
-		self.human_pose.header.frame_id="/frame_id_1"
-		self.human_pose.header.stamp = rospy.Time.now()
-		# set the current timestamp
-		# self.human_pose.header.stamp.secs = curr_time
-		self.human_pose.pose.position.x = target_pos[0]
-		self.human_pose.pose.position.y = target_pos[1]
-		self.human_pose.pose.position.z = 0.0
+		raise NotImplementedError
+
+		# ======== EDIT END ======== #
 
 	def sim_to_real_coord(self, sim_coord):
 		"""
@@ -176,11 +194,4 @@ class SimHuman(object):
 						int(round((self.real_upper[1] - real_coord[1])/self.res))]
 
 if __name__ == '__main__':
-
-	if len(sys.argv) < 4:
-		human_num = "1"
-		print "[sim_human]: no human_num arg specified. Setting human_num to 1."
-	else:
-		human_num = sys.argv[1]
-
-	human = SimHuman(human_num)
+	human = PotentialFieldHuman()

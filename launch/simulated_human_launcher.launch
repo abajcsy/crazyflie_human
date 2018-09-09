@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+
+<launch>
+
+	<rosparam command="load" file="$(find crazyflie_human)/config/pedestrian_pred.yaml" />
+
+	<!-- Human ID. -->
+	<arg name="human_number" default="1" />
+	<param name="human_number" value="$(arg human_number)" />
+
+	<!-- Preidction model: irrational, rational, adaptive.	-->
+	<arg name="beta" default="adaptive" /> 
+	<param name="beta" value="$(arg beta)" />
+
+	<!-- Simulate human walking around. -->
+	<node name="simulate_human$(arg human_number)" pkg="crazyflie_human" type="linear_human.py" output="screen"/>
+
+	<!-- Predict each human. -->
+	<node name="human_prediction$(arg human_number)" pkg="crazyflie_human" type="human_pred.py" output="screen"/> 
+
+</launch>

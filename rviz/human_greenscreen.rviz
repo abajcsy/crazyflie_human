@@ -4,19 +4,12 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-<<<<<<< HEAD
-        - /Grid1
-=======
+        - /Global Options1
         - /TF1
->>>>>>> 801caa94da115f09fecca3a14b4efbee12c5f351
         - /TF1/Frames1
         - /BgImage1
       Splitter Ratio: 0.5
-<<<<<<< HEAD
-    Tree Height: 347
-=======
     Tree Height: 773
->>>>>>> 801caa94da115f09fecca3a14b4efbee12c5f351
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -43,7 +36,7 @@ Visualization Manager:
       Cell Size: 1
       Class: rviz/Grid
       Color: 46; 46; 47
-      Enabled: true
+      Enabled: false
       Line Style:
         Line Width: 0.03
         Value: Lines
@@ -54,9 +47,9 @@ Visualization Manager:
         Y: 0
         Z: 0
       Plane: XY
-      Plane Cell Count: 10
+      Plane Cell Count: 100
       Reference Frame: <Fixed Frame>
-      Value: true
+      Value: false
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /world_marker
@@ -182,7 +175,7 @@ Visualization Manager:
       Marker Topic: /human_marker1
       Name: Human1
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -190,7 +183,7 @@ Visualization Manager:
       Marker Topic: /human_marker2
       Name: Human2
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -198,7 +191,7 @@ Visualization Manager:
       Marker Topic: /goal_markers1
       Name: GoalsHuman1
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -206,7 +199,7 @@ Visualization Manager:
       Marker Topic: /goal_markers2
       Name: GoalsHuman2
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -214,7 +207,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker1
       Name: OccuGridHuman1
       Namespaces:
-        {}
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -222,9 +215,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker2
       Name: OccuGridHuman2
       Namespaces:
-        {}
-<<<<<<< HEAD
-=======
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -248,13 +239,12 @@ Visualization Manager:
       Marker Topic: /bg_image
       Name: BgImage
       Namespaces:
-        image_cube_list: true
->>>>>>> 801caa94da115f09fecca3a14b4efbee12c5f351
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
-    Background Color: 255; 255; 255
+    Background Color: 0; 255; 0
     Fixed Frame: world
     Frame Rate: 30
   Name: root
@@ -284,33 +274,19 @@ Visualization Manager:
         Value: false
       Name: Current View
       Near Clip Distance: 0.01
-<<<<<<< HEAD
-      Pitch: 0.415401
-      Target Frame: planner
-      Value: ThirdPersonFollower (rviz)
-      Yaw: 4.74358
-=======
-      Scale: 10
+      Scale: 135.523
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 22.2746
-      Y: 42.5159
->>>>>>> 801caa94da115f09fecca3a14b4efbee12c5f351
+      X: -0.0548526
+      Y: 0.803287
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-<<<<<<< HEAD
-  Height: 630
-  Hide Left Dock: false
-  Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000017c000001eafc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000001ea000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c000002610000000100000113000001eafc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a005600690065007700730100000028000001ea000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004bf00000040fc0100000002fb0000000800540069006d00650100000000000004bf000002f600fffffffb0000000800540069006d0065010000000000000450000000000000000000000224000001ea00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
-=======
   Height: 1056
   Hide Left Dock: false
   Hide Right Dock: false
   QMainWindow State: 000000ff00000000fd00000004000000000000017c00000394fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002800000394000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000011300000394fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000002800000394000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073f00000040fc0100000002fb0000000800540069006d006501000000000000073f000002f600fffffffb0000000800540069006d00650100000000000004500000000000000000000004a40000039400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
->>>>>>> 801caa94da115f09fecca3a14b4efbee12c5f351
   Selection:
     collapsed: false
   Time:
@@ -319,11 +295,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-<<<<<<< HEAD
-  Width: 1215
-  X: 65
-=======
   Width: 1855
   X: 1985
->>>>>>> 801caa94da115f09fecca3a14b4efbee12c5f351
   Y: 24
