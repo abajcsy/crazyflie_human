@@ -49,6 +49,9 @@ pred:
   epsilon_beta: 0.02
 
 sim:
+  # Specify the robot prefixes to listen to (obstacles)
+  robot_prefixes: ["HY4", "HY5"]
+
   # Timestep 
   dt: 0.01
 
