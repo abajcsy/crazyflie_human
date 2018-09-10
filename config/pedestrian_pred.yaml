@@ -49,7 +49,7 @@ pred:
   epsilon_beta: 0.02
 
   alpha_pot_field: 0.5
-  beta_pot_field: 0.5
+  beta_pot_field: 0.001
   goal_s: 1
   obstacle_s: 1
   goal_r: 0.25

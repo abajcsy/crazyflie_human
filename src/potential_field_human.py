@@ -115,7 +115,7 @@ class PotentialFieldHuman(object):
 
 		# Create a subscriber for each other human in the environment.
 		for ii in range(1, self.total_number_of_humans+1):
-			if ii is not self.human_number:
+			if ii is not int(self.human_number):
 				topic = "/human_pose"+str(ii)
 
 				# Lambda function allows us to call a callback
@@ -198,9 +198,14 @@ class PotentialFieldHuman(object):
 				x_goal_grad += self.alpha * (dist_to_goal - self.goal_radius) * np.cos(theta)
 				y_goal_grad += self.alpha * (dist_to_goal - self.goal_radius) * np.sin(theta)
 			else:
+				#print "theta: ", theta
+				#print "cos(theta): ", np.cos(theta)
+				#print "x grad update: ", self.alpha * self.goal_field_spread * np.cos(theta)
 				x_goal_grad += self.alpha * self.goal_field_spread * np.cos(theta)
 				y_goal_grad += self.alpha * self.goal_field_spread * np.sin(theta)
+				#print "x_goal_grad: ", x_goal_grad
 
+		#print "other humans: ", list(self.other_human_poses.keys())
 		for p in list(self.other_human_poses.values()):
 			obs_x = p.pose.position.x
 			obs_y = p.pose.position.y 
@@ -222,6 +227,8 @@ class PotentialFieldHuman(object):
 
 		x_grad = x_goal_grad + x_obs_grad
 		y_grad = y_goal_grad + y_obs_grad
+		#print "x_obs_grad: ", x_obs_grad
+		#print "x_grad: ", x_grad
 		self.prev_pose = [self.prev_pose[0] + 0.01 * x_grad, self.prev_pose[1] + 0.01 * y_grad]
 
 		self.human_pose = PoseStamped()
@@ -230,6 +237,8 @@ class PotentialFieldHuman(object):
 		self.human_pose.pose.position.x = self.prev_pose[0] 
 		self.human_pose.pose.position.y = self.prev_pose[1]
 		self.human_pose.pose.position.z = 0.0
+
+		#print self.prev_pose
 
 		# ======== EDIT END ======== #
 
