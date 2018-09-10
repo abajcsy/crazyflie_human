@@ -56,6 +56,15 @@ class PotentialFieldHuman(object):
 		self.real_start = rospy.get_param("pred/human"+self.human_number+"_real_start")
 		self.real_goals = rospy.get_param("pred/human"+self.human_number+"_real_goals")
 
+		# potential field parameters
+		self.goal_field_spread = rospy.get_param("pred/goal_s")
+		self.obstacle_field_spread = rospy.get_param("pred/obstacle_s")
+		self.goal_radius = rospy.get_param("pred/goal_r")
+		self.obstacle_radius = rospy.get_param("pred/obstacle_r")
+		self.alpha = rospy.get_param("pred/alpha")
+		self.beta = rospy.get_param("pred/beta")
+
+
 		# ======== NOTE ======== #
 		# For now, assume that there is only one goal that the human is being 
 		# "attracted" to with the potential field.
@@ -172,8 +181,55 @@ class PotentialFieldHuman(object):
 		"""
 
 		# ======== EDIT BEGIN ======== #
+		x_grad = 0
+		y_grad = 0
+		x_goal_grad = 0
+		y_goal_grad = 0
+		x_obs_grad = 0
+		y_obs_grad = 0
 
-		raise NotImplementedError
+		for goal in self.real_goals:
+			dist_to_goal = np.sqrt((goal[0] - self.prev_pose[0])**2 + (goal[1] - self.prev_pose[1])**2)
+			theta = np.arctan2(goal[1] - self.prev_pose[1], goal[0] - self.prev_pose[0])
+			if dist_to_goal < self.goal_radius:
+				x_goal_grad += 0
+				y_goal_grad += 0
+			elif dist_to_goal >= self.goal_radius and dist_to_goal <= self.goal_radius + self.goal_field_spread:
+				x_goal_grad += self.alpha * (dist_to_goal - self.goal_radius) * np.cos(theta)
+				y_goal_grad += self.alpha * (dist_to_goal - self.goal_radius) * np.sin(theta)
+			else:
+				x_goal_grad += self.alpha * self.goal_field_spread * np.cos(theta)
+				y_goal_grad += self.alpha * self.goal_field_spread * np.sin(theta)
+
+		for p in list(self.other_human_poses.values()):
+			obs_x = p.pose.position.x
+			obs_y = p.pose.position.y 
+			dist_to_obs = np.sqrt((obs_x - self.prev_pose[0])**2 + (obs_y - self.prev_pose[1])**2)
+			theta = np.arctan2(obs_y - self.prev_pose[1], obs_x - self.prev_pose[0])
+			if dist_to_obs < self.obstacle_radius:
+				x_obs_grad += -100000 * np.cos(theta)
+				y_obs_grad += -100000 * np.sin(theta)
+			elif dist_to_obs >= self.obstacle_radius and \
+				dist_to_obs <= self.obstacle_radius + self.obstacle_field_spread:
+				x_obs_grad += -self.beta * (self.obstacle_field_spread + self.obstacle_radius - dist_to_obs) * \
+					np.cos(theta)
+				y_obs_grad += -self.beta * (self.obstacle_field_spread + self.obstacle_radius - dist_to_obs) * \
+					np.sin(theta)
+			else:
+				x_obs_grad += 0
+				y_obs_grad += 0
+
+
+		x_grad = x_goal_grad + x_obs_grad
+		y_grad = y_goal_grad + y_obs_grad
+		self.prev_pose = [self.prev_pose[0] + x_grad, self.prev_pose[1] + y_grad]
+
+		self.human_pose = PoseStamped()
+		self.human_pose.header.frame_id="/frame_id_1"
+		self.human_pose.header.stamp = rospy.Time.now()
+		self.human_pose.pose.position.x = self.prev_pose[0] 
+		self.human_pose.pose.position.y = self.prev_pose[1]
+		self.human_pose.pose.position.z = 0.0
 
 		# ======== EDIT END ======== #
 
