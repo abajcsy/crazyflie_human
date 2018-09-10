@@ -38,5 +38,5 @@
 	</group>
 
 	<!-- Visualize the background image. -->
-	<node name="bg_visualizer" pkg="crazyflie_human" type="bg_image_publisher.py" output="screen"/> 	
+	<node name="bg_visualizer" pkg="crazyflie_human" type="bg_image_border_publisher.py" output="screen"/> 	
 </launch>

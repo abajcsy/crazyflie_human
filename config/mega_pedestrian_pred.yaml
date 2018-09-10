@@ -10,14 +10,14 @@ pred:
   total_number_of_humans: 3
 
   # Start position of human(s) and list of potential goal locations
-  human1_real_start: [1.63, 0.46] 
-  human1_real_goals: [[-1.44, 0.44]] 
+  human1_real_start: [-14, 11] 
+  human1_real_goals: [[-13, -10]] 
 
-  human2_real_start: [-1.02, -0.79] 
-  human2_real_goals: [[0.14, 1.60]] 
+  human2_real_start: [-13, -10] 
+  human2_real_goals: [[-13, 10]] 
 
-  human3_real_start: [-50, -50] 
-  human3_real_goals: [[50, 50]] 
+  human3_real_start: [0, 11] 
+  human3_real_goals: [[-14, -0]] 
 
   # color coding for human visualization (RGB)
   human1_color: [0.0, 0.0, 1.0]
