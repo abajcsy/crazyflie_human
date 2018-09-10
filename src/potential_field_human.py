@@ -31,6 +31,10 @@ class PotentialFieldHuman(object):
 			t = rospy.Time.now().secs - self.start_T
 			self.update_pose(t)
 			self.state_pub.publish(self.human_pose)
+
+			# publish markers for goal spread and radius
+			#goal_spread_marker = self.radius_to_sphere_marker(self.real_goals[0], self.goal_field_spread+self.goal_radius)
+			#self.goal_spread_pub.publish(goal_spread_marker)
 			rate.sleep()
 
 	def load_parameters(self):
@@ -56,24 +60,23 @@ class PotentialFieldHuman(object):
 		self.real_start = rospy.get_param("pred/human"+self.human_number+"_real_start")
 		self.real_goals = rospy.get_param("pred/human"+self.human_number+"_real_goals")
 
-		# ======== NOTE ======== #
-		# For now, assume that there is only one goal that the human is being 
-		# "attracted" to with the potential field.
-		# ======== NOTE ======== #
-
 		# color to use to represent this human
 		self.color = rospy.get_param("pred/human"+self.human_number+"_color")
-
-		# ======== EDIT BEGIN ======== #
-		# Store information you need about generating potential field motions.
-		# E.g. you can store the start time
-		self.start_T = rospy.Time.now().secs
-		# ======== EDIT END ======== #
 
 		# PoseStamped ROS message
 		self.human_pose = None
 
 		# --- simulation params ---# 
+
+		# potential field parameters
+		self.start_T = rospy.Time.now().secs
+		self.dt = rospy.get_param("sim/dt")
+		self.goal_field_spread = rospy.get_param("sim/goal_s")
+		self.obstacle_field_spread = rospy.get_param("sim/obstacle_s")
+		self.goal_radius = rospy.get_param("sim/goal_r")
+		self.obstacle_radius = rospy.get_param("sim/obstacle_r")
+		self.alpha = rospy.get_param("sim/alpha_pot_field")
+		self.beta = rospy.get_param("sim/beta_pot_field")
 
 		# resolution (m/cell)
 		self.res = rospy.get_param("pred/resolution")
@@ -85,18 +88,10 @@ class PotentialFieldHuman(object):
 		# get the total number of humans in the environment
 		self.total_number_of_humans = rospy.get_param("pred/total_number_of_humans")
 
-		# ======== EDIT BEGIN ======== #
-
-		# You will probably need some variables to 
-		# store state information about the other agents
-		# in the environment.(E.g. if this class is 
-		# simulating human1, it needs to know about 
-		# human2, robot2, robot3, ...)
-		#
 		# Dictionary mapping from human pose topic to current pose
 		self.other_human_poses = {}
-
-		# ======== EDIT END ======== #
+		# Dictionary mapping from robot pose topic to current pose
+		self.other_robot_poses = {}
 
 	def register_callbacks(self):
 		"""
@@ -106,7 +101,7 @@ class PotentialFieldHuman(object):
 
 		# Create a subscriber for each other human in the environment.
 		for ii in range(1, self.total_number_of_humans+1):
-			if ii is not self.human_number:
+			if ii is not int(self.human_number):
 				topic = "/human_pose"+str(ii)
 
 				# Lambda function allows us to call a callback
@@ -115,6 +110,10 @@ class PotentialFieldHuman(object):
 					return lambda m: self.human_pose_callback(t, m)
 
 				rospy.Subscriber(topic, PoseStamped, curried_callback(topic), queue_size=1)
+
+		# Visualize the spread and the radius of the goal.
+		# self.goal_spread_pub = rospy.Publisher('/goal_spread'+self.human_number, 
+		#	Marker, queue_size=10)
 
 		# ======== NOTE ======== #
 		# For now, just focus on humans, but eventually 
@@ -162,6 +161,30 @@ class PotentialFieldHuman(object):
 
 		return marker
 
+	def radius_to_sphere_marker(self, xy, radius, color=[1.0, 0.0, 0.0]):
+		"""
+		Converts radius to SPHERE marker type placed at xy position.
+		"""
+		marker = Marker()
+		marker.header.frame_id = "/world"
+
+		marker.type = marker.SPHERE
+		marker.action = marker.ADD
+		marker.pose.orientation.w = 1
+		marker.pose.position.z = 0.1
+		marker.scale.x = radius
+		marker.scale.y = radius
+		marker.scale.z = radius
+		marker.color.a = 0.3		
+		marker.color.r = color[0]
+		marker.color.g = color[1]
+		marker.color.b = color[2]
+
+		marker.pose.position.x = xy[0]
+		marker.pose.position.y = xy[1]
+		marker.pose.position.z = 0.0
+
+		return marker
 
 	def update_pose(self, curr_time):
 		"""
@@ -171,11 +194,70 @@ class PotentialFieldHuman(object):
 		with the next position.
 		"""
 
-		# ======== EDIT BEGIN ======== #
+		# Store the goal and obstacle gradients in x, y
+		x_goal_grad = 0.0
+		y_goal_grad = 0.0
+		x_obs_grad = 0.0
+		y_obs_grad = 0.0
 
-		raise NotImplementedError
+		# Compute goal-gradient based on the distance from human to goal.
+		for goal in self.real_goals:
+			dist_to_goal = np.linalg.norm(np.array(goal) - np.array(self.prev_pose)) 
+			theta = np.arctan2(goal[1] - self.prev_pose[1], goal[0] - self.prev_pose[0])
+			if dist_to_goal < self.goal_radius:
+				# Stop if inside of goal.
+				x_goal_grad += 0.0
+				y_goal_grad += 0.0
+			elif dist_to_goal >= self.goal_radius and \
+				dist_to_goal <= self.goal_radius + self.goal_field_spread:
+				# Within the spread of the potential field but outside the 
+				# goal's radius, the gradient is proportional to the distance 
+				# between the agent and the goal.
+				x_goal_grad += self.alpha * (dist_to_goal - self.goal_radius) * np.cos(theta)
+				y_goal_grad += self.alpha * (dist_to_goal - self.goal_radius) * np.sin(theta)
+			else:
+				# Outside the potential field spread, gradient is maximal.
+				x_goal_grad += self.alpha * self.goal_field_spread * np.cos(theta)
+				y_goal_grad += self.alpha * self.goal_field_spread * np.sin(theta)
 
-		# ======== EDIT END ======== #
+		# Compute obstacle-gradient based on the distance from human to other humans.
+		for curr_pose in list(self.other_human_poses.values()):
+			obs_xy = [curr_pose.pose.position.x, curr_pose.pose.position.y]
+			dist_to_obs = np.linalg.norm(np.array(obs_xy) - np.array(self.prev_pose)) 
+			theta = np.arctan2(obs_xy[1] - self.prev_pose[1], obs_xy[0] - self.prev_pose[0])
+			if dist_to_obs < self.obstacle_radius:
+				# Within the obstacle, the potential field is "infinitely" repulsive.
+				x_obs_grad += -100000 * np.sign(np.cos(theta))
+				y_obs_grad += -100000 * np.sign(np.sin(theta))
+			elif dist_to_obs >= self.obstacle_radius and \
+				dist_to_obs <= self.obstacle_radius + self.obstacle_field_spread:
+				# Within the spread of the potential field but outside the
+				# radius of the obstacle, the gradient grows from zero (when agent
+				# is at the edge of the spread) to Beta (when agent is at the 
+				# edge of the obstacle).
+				x_obs_grad += -self.beta * (self.obstacle_field_spread + self.obstacle_radius - dist_to_obs) * \
+					np.cos(theta)
+				y_obs_grad += -self.beta * (self.obstacle_field_spread + self.obstacle_radius - dist_to_obs) * \
+					np.sin(theta)
+			else:
+				# Outside the obstacle spread, it has no effect.
+				x_obs_grad += 0.0
+				y_obs_grad += 0.0
+
+		# Combine the potential fields.
+		x_grad = x_goal_grad + x_obs_grad
+		y_grad = y_goal_grad + y_obs_grad
+
+		# Compute the next location for agent given the gradient.
+		self.prev_pose = [self.prev_pose[0] + self.dt * x_grad, self.prev_pose[1] + self.dt * y_grad]
+
+		# Construct a new Pose message with the updated state.
+		self.human_pose = PoseStamped()
+		self.human_pose.header.frame_id="/frame_id_1"
+		self.human_pose.header.stamp = rospy.Time.now()
+		self.human_pose.pose.position.x = self.prev_pose[0] 
+		self.human_pose.pose.position.y = self.prev_pose[1]
+		self.human_pose.pose.position.z = 0.0
 
 	def sim_to_real_coord(self, sim_coord):
 		"""
