@@ -47,3 +47,26 @@ pred:
   # Process noise (epsilon-stubborn model)
   epsilon_dest: 0.02
   epsilon_beta: 0.02
+
+sim:
+  # Timestep 
+  dt: 0.01
+
+  # Potential field goal parameters
+  #   alpha  -- attraction amount
+  #   goal_s -- potential field spread (m)
+  #   goal_r -- goal radius (m)
+  alpha_pot_field: 0.5
+  goal_s: 1
+  goal_r: 0.5
+
+  # Potential field obstacle parameters
+  #   beta  -- obstacle's repulsion amount
+  #   obstacle_s -- potential field spread (m)
+  #   obstacle_r -- obstacle radius (m)
+  beta_pot_field: 1.0
+  obstacle_s: 1
+  obstacle_r: 0.25
+
+
+
