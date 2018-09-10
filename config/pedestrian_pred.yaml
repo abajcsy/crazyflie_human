@@ -48,10 +48,10 @@ pred:
   epsilon_dest: 0.02
   epsilon_beta: 0.02
 
-  alpha: 0.5
-  beta: 0.5
+  alpha_pot_field: 0.5
+  beta_pot_field: 0.5
   goal_s: 1
   obstacle_s: 1
-  goal_r: 0.5
-  obstacle_r: 0.5
+  goal_r: 0.25
+  obstacle_r: 0.25
 

@@ -61,8 +61,8 @@ class PotentialFieldHuman(object):
 		self.obstacle_field_spread = rospy.get_param("pred/obstacle_s")
 		self.goal_radius = rospy.get_param("pred/goal_r")
 		self.obstacle_radius = rospy.get_param("pred/obstacle_r")
-		self.alpha = rospy.get_param("pred/alpha")
-		self.beta = rospy.get_param("pred/beta")
+		self.alpha = rospy.get_param("pred/alpha_pot_field")
+		self.beta = rospy.get_param("pred/beta_pot_field")
 
 
 		# ======== NOTE ======== #
@@ -207,8 +207,8 @@ class PotentialFieldHuman(object):
 			dist_to_obs = np.sqrt((obs_x - self.prev_pose[0])**2 + (obs_y - self.prev_pose[1])**2)
 			theta = np.arctan2(obs_y - self.prev_pose[1], obs_x - self.prev_pose[0])
 			if dist_to_obs < self.obstacle_radius:
-				x_obs_grad += -100000 * np.cos(theta)
-				y_obs_grad += -100000 * np.sin(theta)
+				x_obs_grad += -100000 * np.sign(np.cos(theta))
+				y_obs_grad += -100000 * np.sign(np.sin(theta))
 			elif dist_to_obs >= self.obstacle_radius and \
 				dist_to_obs <= self.obstacle_radius + self.obstacle_field_spread:
 				x_obs_grad += -self.beta * (self.obstacle_field_spread + self.obstacle_radius - dist_to_obs) * \
@@ -222,7 +222,7 @@ class PotentialFieldHuman(object):
 
 		x_grad = x_goal_grad + x_obs_grad
 		y_grad = y_goal_grad + y_obs_grad
-		self.prev_pose = [self.prev_pose[0] + x_grad, self.prev_pose[1] + y_grad]
+		self.prev_pose = [self.prev_pose[0] + 0.01 * x_grad, self.prev_pose[1] + 0.01 * y_grad]
 
 		self.human_pose = PoseStamped()
 		self.human_pose.header.frame_id="/frame_id_1"
