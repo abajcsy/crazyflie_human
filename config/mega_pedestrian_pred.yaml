@@ -7,6 +7,7 @@ state:
 pred:
   # Total number of humans that you will be simulating. Used 
   # by potential_field_human.py to avoid other humans.
+ 
   total_number_of_humans: 10
 
   # Start position of human(s) and list of potential goal locations
@@ -84,6 +85,9 @@ pred:
 sim:
   # Timestep 
   dt: 0.01
+
+  # Specify the robot prefixes to listen to (obstacles)
+  robot_prefixes: ["HY4", "HY5"]
 
   # Potential field goal parameters
   #   alpha  -- attraction amount

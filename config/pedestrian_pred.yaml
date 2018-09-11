@@ -28,7 +28,7 @@ pred:
   resolution: 0.1464 
 
   # Num timesteps into the future to predict
-  fwd_tsteps: 20
+  fwd_tsteps: 10
 
   # Initial betas depending on model
   beta_adaptive: [0.1, 0.3, 1.0, 3.0, 10.0]
@@ -49,6 +49,9 @@ pred:
   epsilon_beta: 0.02
 
 sim:
+  # Specify the robot prefixes to listen to (obstacles)
+  robot_prefixes: ["HY4", "HY5"]
+
   # Timestep 
   dt: 0.01
 

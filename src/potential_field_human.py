@@ -4,6 +4,7 @@ import numpy as np
 from std_msgs.msg import String
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
 from visualization_msgs.msg import Marker, MarkerArray
+from crazyflie_msgs.msg import PositionVelocityStateStamped
 import time
 import sys
 
@@ -93,6 +94,9 @@ class PotentialFieldHuman(object):
 		self.alpha = rospy.get_param("sim/alpha_pot_field")
 		self.beta = rospy.get_param("sim/beta_pot_field")
 
+		# get he prefixes of all the robots so we can listen to their topics
+		self.robot_prefixes = rospy.get_param("sim/robot_prefixes")
+
 		# resolution (m/cell)
 		self.res_x = rospy.get_param("pred/resolution_x")
 		self.res_y = rospy.get_param("pred/resolution_y")
@@ -129,15 +133,22 @@ class PotentialFieldHuman(object):
 
 				rospy.Subscriber(topic, PoseStamped, curried_callback(topic), queue_size=1)
 
+
+		# Create a subscriber for each robot in the environment.
+		for robot in self.robot_prefixes:
+			topic = "/state/position_velocity"+robot
+
+			# Lambda function allows us to call a callback
+			# with more arguments than normally intended. 
+			def curried_callback(t):
+				return lambda m: self.robot_position_callback(t, m)
+
+			rospy.Subscriber(topic, PositionVelocityStateStamped, curried_callback(topic), queue_size=1)
+
 		# Visualize the spread and the radius of the goal.
+		# 
 		# self.goal_spread_pub = rospy.Publisher('/goal_spread'+self.human_number, 
 		#	Marker, queue_size=10)
-
-		# ======== NOTE ======== #
-		# For now, just focus on humans, but eventually 
-		# we will need the same kind of code block as above
-		# to subscribe to the state information about the robots too. 
-		# ======== NOTE ======== #
 
 	def human_pose_callback(self, topic, msg):
 		"""
@@ -173,6 +184,19 @@ class PotentialFieldHuman(object):
 
 		return marker
 
+	def robot_position_callback(self, topic, msg):
+		"""
+		This callback stores the most recent robot position.
+		"""
+
+		# Convert from PositionVelocityState to PoseStamped message for 
+		# consistency with human. 
+		robot_pose = PoseStamped()
+		robot_pose.pose.position.x = msg.state.x 
+		robot_pose.pose.position.y = msg.state.y
+		robot_pose.pose.position.z = msg.state.z
+
+		self.other_robot_poses[topic] = robot_pose
 
 	def pose_to_marker(self, color=[1.0, 0.0, 0.0]):
 		"""
@@ -192,7 +216,6 @@ class PotentialFieldHuman(object):
 		marker.color.r = color[0]
 		marker.color.g = color[1]
 		marker.color.b = color[2]
-
 
 		if self.human_pose is not None:
 			marker.pose.position.x = self.human_pose.pose.position.x 
@@ -264,8 +287,10 @@ class PotentialFieldHuman(object):
 				x_goal_grad += self.alpha * self.goal_field_spread * np.cos(theta)
 				y_goal_grad += self.alpha * self.goal_field_spread * np.sin(theta)
 
-		# Compute obstacle-gradient based on the distance from human to other humans.
-		for curr_pose in list(self.other_human_poses.values()):
+		# Compute obstacle-gradient based on the distance from human 
+		# to other humans AND from human to other robots.
+		humans_and_robots = list(self.other_human_poses.values()) + list(self.other_robot_poses.values())
+		for curr_pose in humans_and_robots:
 			obs_xy = [curr_pose.pose.position.x, curr_pose.pose.position.y]
 			dist_to_obs = np.linalg.norm(np.array(obs_xy) - np.array(self.prev_pose)) 
 			theta = np.arctan2(obs_xy[1] - self.prev_pose[1], obs_xy[0] - self.prev_pose[0])
