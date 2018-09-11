@@ -223,7 +223,7 @@ class HumanPrediction(object):
 			# publish occupancy grid list
 			if self.occupancy_grids is not None:
 				self.occu_pub.publish(self.grid_to_message())
-				self.visualize_occugrid(1)
+				self.visualize_occugrid(3)
 
 			# adjust the deltat based on the observed measurements
 			if self.prev_pos is not None:
@@ -476,12 +476,12 @@ class HumanPrediction(object):
 						#print real_coord
 
 						color = ColorRGBA()
-						color.a = 1.0#np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
+						color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
 						color.r = np.sqrt(grid[i])
 						color.g = np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0
 						color.b = 0.9*np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0 + 0.5*np.sqrt(grid[i])
-						#if grid[i] < self.prob_thresh:
-						#	color.a = 0.0
+						if grid[i] < self.prob_thresh:
+							color.a = 0.0
 						marker.colors.append(color)
 
 						pt = Vector3()

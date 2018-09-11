@@ -4,8 +4,18 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Status1
+        - /Grid1
         - /TF1
         - /TF1/Frames1
+        - /Human31
+        - /Human31/Status1
+        - /Human51
+        - /Human51/Status1
+        - /Human61
+        - /Human61/Status1
+        - /Human71
+        - /Human71/Status1
       Splitter Ratio: 0.5
     Tree Height: 773
   - Class: rviz/Selection
@@ -46,7 +56,7 @@ Visualization Manager:
         Z: 0
       Plane: XY
       Plane Cell Count: 100
-      Reference Frame: <Fixed Frame>
+      Reference Frame: world
       Value: true
     - Class: rviz/Marker
       Enabled: true
@@ -60,14 +70,20 @@ Visualization Manager:
       Enabled: true
       Frame Timeout: 10000
       Frames:
+        1:
+          Value: false
         All Enabled: false
+        world:
+          Value: true
       Marker Scale: 2
       Name: TF
       Show Arrows: false
       Show Axes: true
       Show Names: false
       Tree:
-        {}
+        1:
+          world:
+            {}
       Update Interval: 0
       Value: true
     - Class: rviz/Marker
@@ -213,7 +229,7 @@ Visualization Manager:
       Marker Topic: /human_marker6
       Name: Human6
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -221,7 +237,7 @@ Visualization Manager:
       Marker Topic: /human_marker7
       Name: Human7
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -293,7 +309,7 @@ Visualization Manager:
       Marker Topic: /goal_markers6
       Name: GoalsHuman6
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -301,7 +317,7 @@ Visualization Manager:
       Marker Topic: /goal_markers7
       Name: GoalsHuman7
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -354,6 +370,46 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
+      Marker Topic: /occu_grid_marker6
+      Name: OccuGridHuman6
+      Namespaces:
+        visualize: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /occu_grid_marker7
+      Name: OccuGridHuman7
+      Namespaces:
+        visualize: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /occu_grid_marker8
+      Name: OccuGridHuman8
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /occu_grid_marker9
+      Name: OccuGridHuman9
+      Namespaces:
+        visualize: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /occu_grid_marker10
+      Name: OccuGridHuman10
+      Namespaces:
+        visualize: true
+      Queue Size: 100
+      Value: true
+      Namespaces:
+        visualize: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
       Marker Topic: /vis/goalHY4
       Name: GoalRobot1
       Namespaces:
@@ -376,6 +432,14 @@ Visualization Manager:
         {}
       Queue Size: 100
       Value: false
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /occu_grid_marker5
+      Name: OccuGridHuman5
+      Namespaces:
+        visualize: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -401,25 +465,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 47.6510696
+      Distance: 49.7831802
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.163847998
-        Y: 0.996861994
-        Z: 1.67569005
+        X: 2.46884918
+        Y: -4.24472094
+        Z: 1.43387985
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.19479644
+      Pitch: 1.56979632
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.22891164
+      Yaw: 4.5971179
     Saved: ~
 Window Geometry:
   Displays:
