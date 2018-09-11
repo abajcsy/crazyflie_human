@@ -89,9 +89,9 @@ class HumanPrediction(object):
 		self.sim_height = int(rospy.get_param("pred/sim_height"+self.human_number))
 		self.sim_width = int(rospy.get_param("pred/sim_width"+self.human_number))
 
-		# resolution (real meters)/(sim dim-1) (m/cell)
-		self.res_x = self.real_width/(self.sim_width-1)
-		self.res_y = self.real_height/(self.sim_height-1)
+		# resolution (real meters)/(sim dim) (m/cell)
+		self.res_x = self.real_width/self.sim_width
+		self.res_y = self.real_height/self.sim_height
 
 		# (simulation) start and goal locations
 		self.sim_start = self.real_to_sim_coord(self.real_start)
@@ -130,7 +130,6 @@ class HumanPrediction(object):
 
 		print "sim height: ", self.sim_height
 		print "sim width: ", self.sim_width
-
 
 		print "res_x: ", self.res_x
 		print "res_y: ", self.res_y
@@ -253,6 +252,7 @@ class HumanPrediction(object):
 		"""
 
 		sim_newstate = self.real_to_sim_coord(newstate)
+		print "sim_newstate: ", sim_newstate
 
 		if self.real_human_traj is None:
 			self.real_human_traj = np.array([newstate])
@@ -282,7 +282,8 @@ class HumanPrediction(object):
 		dest_list = [self.gridworld.coor_to_state(g[0], g[1]) for g in self.sim_goals]
 
 		# Convert the human trajectory points from real-world to 2D grid values. 
-		traj = [self.real_to_sim_coord(x, round_vals=False) for x in self.real_human_traj] 
+		traj = [self.real_to_sim_coord(x, round_vals=True) for x in self.real_human_traj] 
+		print "traj: ", traj
   
   		# OPTION 1: The line below feeds in the entire human traj history so far
   		# 			and does a single bulk Bayesian inference step.
@@ -357,23 +358,13 @@ class HumanPrediction(object):
 
 		return action
 
-	def state_to_coor(self, state):
-		"""
-		Goes from 1D array value to [x,y] in simulation
-		"""
-		#print "state: ", state
-		#print "res_x: ", self.res_x
-		#print "res_y: ", self.res_y
-
-		return [int(state/self.sim_width), state%self.sim_width]
-
 	def sim_to_real_coord(self, sim_coord):
 		"""
 		Takes [x,y] coordinate in simulation frame and returns a rotated and 
 		shifted	value in the ROS coordinates
 		"""
-		return [sim_coord[0]*self.res_x + self.real_lower[0], 
-				self.real_upper[1] - sim_coord[1]*self.res_y]
+		return [self.real_lower[0] + 0.5*self.res_x + sim_coord[0]*self.res_x, 
+				self.real_upper[1] - 0.5*self.res_y - sim_coord[1]*self.res_y]
 
 	def real_to_sim_coord(self, real_coord, round_vals=True):
 		"""
@@ -384,14 +375,14 @@ class HumanPrediction(object):
 					False - gives a floating point value on the grid cell
 		"""
 		if round_vals:
-			x = round((real_coord[0] - self.real_lower[0])/self.res_x)
-			y = round((self.real_upper[1] - real_coord[1])/self.res_y)
+			x = np.floor((real_coord[0] - self.real_lower[0])/self.res_x)
+			y = np.floor((self.real_upper[1] - real_coord[1])/self.res_y)
 		else:
 			x = (real_coord[0] - self.real_lower[0])/self.res_x
 			y = (self.real_upper[1] - real_coord[1])/self.res_y
 
-		i_coord = np.minimum(self.sim_height-1, np.maximum(0.0,x));
-		j_coord = np.minimum(self.sim_width-1, np.maximum(0.0,y));
+		i_coord = np.minimum(self.sim_width-1, np.maximum(0.0,x));
+		j_coord = np.minimum(self.sim_height-1, np.maximum(0.0,y));
 
 		if round_vals:
 			return [int(i_coord), int(j_coord)]
@@ -452,6 +443,13 @@ class HumanPrediction(object):
 			rospy.loginfo_throttle(1.0, "visualize_occugrid: I'm lonely.")
 			return
 
+		dummy_idx = [0, 0]
+		dummy_cartesian = self.sim_to_real_coord(dummy_idx)
+		print "(0, 0) goes to: ", dummy_cartesian
+		dummy_idx = [0, 3]
+		dummy_cartesian = self.sim_to_real_coord(dummy_idx)
+		print "(0, 3) goes to: ", dummy_cartesian
+
 		if self.occupancy_grids is not None:
 			marker = Marker()
 			marker.header.frame_id = "/world"
@@ -470,10 +468,11 @@ class HumanPrediction(object):
 
 				if grid is not None:
 					for i in range(len(grid)):
-						(row, col) = self.state_to_coor(i)
-						#print "row, col", (row, col)
+						(row, col) = self.gridworld.state_to_coor(i)
 						real_coord = self.sim_to_real_coord([row, col])
-						#print real_coord
+						if grid[i] == 1.0:
+							print "(row, col): ", (row, col)
+							print "real_coord: " + str(real_coord) + " with prob: " + str(grid[i])
 
 						color = ColorRGBA()
 						color.a = 1.0#np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
