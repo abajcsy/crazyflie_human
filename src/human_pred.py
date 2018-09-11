@@ -97,9 +97,6 @@ class HumanPrediction(object):
 		self.sim_start = self.real_to_sim_coord(self.real_start)
 		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
 
-		print "real_start: ", self.real_start
-		print "sim_start: ", self.sim_start
-
 		# simulation forward prediction parameters
 		self.fwd_tsteps = rospy.get_param("pred/fwd_tsteps")
 
@@ -115,7 +112,6 @@ class HumanPrediction(object):
 
 		# stores list of beta values for each goal
 		self.beta_model = rospy.get_param("beta")
-		print "beta_model", self.beta_model
 		if self.beta_model == "irrational":
 			self.betas = rospy.get_param("pred/beta_irrational")
 		elif self.beta_model == "rational":
@@ -127,12 +123,6 @@ class HumanPrediction(object):
 		
 		# stores dest x beta array with posterior prob of each beta
 		self.dest_beta_prob = None
-
-		print "sim height: ", self.sim_height
-		print "sim width: ", self.sim_width
-
-		print "res_x: ", self.res_x
-		print "res_y: ", self.res_y
 
 		# grid world representing the experimental environment
 		self.gridworld = GridWorldExpanded(self.sim_width, self.sim_height)
@@ -205,9 +195,6 @@ class HumanPrediction(object):
 
 			self.prev_t += rospy.Duration.from_sec(self.deltat) 
 
-			# get the human's current state and make sure its always a valid location
-			#xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
-
 			# update the map with where the human is at the current time
 			self.update_human_traj(xypose)
 
@@ -222,7 +209,7 @@ class HumanPrediction(object):
 			# publish occupancy grid list
 			if self.occupancy_grids is not None:
 				self.occu_pub.publish(self.grid_to_message())
-				self.visualize_occugrid(1)
+				self.visualize_occugrid(3)
 
 			# adjust the deltat based on the observed measurements
 			if self.prev_pos is not None:
@@ -252,7 +239,6 @@ class HumanPrediction(object):
 		"""
 
 		sim_newstate = self.real_to_sim_coord(newstate)
-		print "sim_newstate: ", sim_newstate
 
 		if self.real_human_traj is None:
 			self.real_human_traj = np.array([newstate])
@@ -283,7 +269,6 @@ class HumanPrediction(object):
 
 		# Convert the human trajectory points from real-world to 2D grid values. 
 		traj = [self.real_to_sim_coord(x, round_vals=True) for x in self.real_human_traj] 
-		print "traj: ", traj
   
   		# OPTION 1: The line below feeds in the entire human traj history so far
   		# 			and does a single bulk Bayesian inference step.
@@ -443,13 +428,6 @@ class HumanPrediction(object):
 			rospy.loginfo_throttle(1.0, "visualize_occugrid: I'm lonely.")
 			return
 
-		dummy_idx = [0, 0]
-		dummy_cartesian = self.sim_to_real_coord(dummy_idx)
-		print "(0, 0) goes to: ", dummy_cartesian
-		dummy_idx = [0, 3]
-		dummy_cartesian = self.sim_to_real_coord(dummy_idx)
-		print "(0, 3) goes to: ", dummy_cartesian
-
 		if self.occupancy_grids is not None:
 			marker = Marker()
 			marker.header.frame_id = "/world"
@@ -470,17 +448,14 @@ class HumanPrediction(object):
 					for i in range(len(grid)):
 						(row, col) = self.gridworld.state_to_coor(i)
 						real_coord = self.sim_to_real_coord([row, col])
-						if grid[i] == 1.0:
-							print "(row, col): ", (row, col)
-							print "real_coord: " + str(real_coord) + " with prob: " + str(grid[i])
 
 						color = ColorRGBA()
-						color.a = 1.0#np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
+						color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
 						color.r = np.sqrt(grid[i])
 						color.g = np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0
 						color.b = 0.9*np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0 + 0.5*np.sqrt(grid[i])
-						#if grid[i] < self.prob_thresh:
-						#	color.a = 0.0
+						if grid[i] < self.prob_thresh:
+							color.a = 0.0
 						marker.colors.append(color)
 
 						pt = Vector3()
