@@ -2,7 +2,7 @@
 
 <launch>
 	<arg name="human1_namespace" default="human1" />
-	<arg name="human2_namespace" default="human2" />
+	<!--<arg name="human2_namespace" default="human2" />
 	<arg name="human3_namespace" default="human3" />
 	<arg name="human4_namespace" default="human4" />
 	<arg name="human5_namespace" default="human5" />
@@ -10,11 +10,11 @@
 	<arg name="human7_namespace" default="human7" />
 	<arg name="human8_namespace" default="human8" />
 	<arg name="human9_namespace" default="human9" />
-	<arg name="human10_namespace" default="human10" />
+	<arg name="human10_namespace" default="human10" />-->
 
 	<!-- Human IDs. -->	
 	<arg name="human1" default="1" />
-	<arg name="human2" default="2" />
+	<!--<arg name="human2" default="2" />
 	<arg name="human3" default="3" />
 	<arg name="human4" default="4" />
 	<arg name="human5" default="5" />
@@ -22,7 +22,7 @@
 	<arg name="human7" default="7" />
 	<arg name="human8" default="8" />
 	<arg name="human9" default="9" />
-	<arg name="human10" default="10" />
+	<arg name="human10" default="10" />-->
 
 	<!-- Prediction model. -->
 	<arg name="prediction_model" default="adaptive" />
@@ -35,77 +35,77 @@
 		</include>
 	</group>
 
-	<!-- ========================== Human 2. ========================== -->
+	<!-- ========================== Human 2. ========================== 
 	 <group ns="$(arg human2_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human2)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 
-	<!-- ========================== Human 3. ========================== -->
+	<!-- ========================== Human 3. ========================== 
 	 <group ns="$(arg human3_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human3)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 
-	<!-- ========================== Human 4. ========================== -->
+	<!-- ========================== Human 4. ========================== 
 	 <group ns="$(arg human4_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human4)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 
-	<!-- ========================== Human 5. ========================== -->
+	<!-- ========================== Human 5. ========================== 
 	 <group ns="$(arg human5_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human5)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 
-	<!-- ========================== Human 6. ========================== -->
+	<!-- ========================== Human 6. ========================== 
 	 <group ns="$(arg human6_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human6)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 
-	<!-- ========================== Human 7. ========================== -->
+	<!-- ========================== Human 7. ========================== 
 	 <group ns="$(arg human7_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human7)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 
-	<!-- ========================== Human 8. ========================== -->
+	<!-- ========================== Human 8. ========================== 
 	 <group ns="$(arg human8_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human8)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 
-	<!-- ========================== Human 9. ========================== -->
+	<!-- ========================== Human 9. ========================== 
 	 <group ns="$(arg human9_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human9)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 
-	<!-- ========================== Human 10. ========================== -->
+	<!-- ========================== Human 10. ========================== 
 	 <group ns="$(arg human10_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human10)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 
 
 	<!-- Visualize the background image. -->

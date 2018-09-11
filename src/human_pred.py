@@ -56,7 +56,7 @@ class HumanPrediction(object):
 
 		while not rospy.is_shutdown():
 			# plot start/goal markers for visualization
-			self.goal_pub.publish(marker_array)
+			# self.goal_pub.publish(marker_array)
 
 			rate.sleep()
 
@@ -64,16 +64,41 @@ class HumanPrediction(object):
 		"""
 		Loads all the important paramters of the human sim
 		"""
-		# --- simulation params ---# 
-		self.human_number = str(rospy.get_param("human_number"))
-		
-		# measurements of gridworld
-		self.sim_height = int(rospy.get_param("pred/sim_height"))
-		self.sim_width = int(rospy.get_param("pred/sim_width"))
 
-		# resolution (m/cell)
-		self.res_x = rospy.get_param("pred/resolution_x")
-		self.res_y = rospy.get_param("pred/resolution_y")
+		self.human_number = str(rospy.get_param("human_number"))
+
+		# --- real-world params ---# 
+
+		low = rospy.get_param("state/lower"+self.human_number)
+		up = rospy.get_param("state/upper"+self.human_number)
+
+		# get real-world measurements of experimental space
+		self.real_height = up[1] - low[1] 
+		self.real_width = up[0] - low[0] 
+		# store the lower and upper measurements
+		self.real_lower = low
+		self.real_upper = up
+
+		# (real-world) start and goal locations 
+		self.real_start = rospy.get_param("pred/human"+self.human_number+"_real_start")
+		self.real_goals = rospy.get_param("pred/human"+self.human_number+"_real_goals")
+
+		# --- simulation params ---# 
+
+		# measurements of gridworld 
+		self.sim_height = int(rospy.get_param("pred/sim_height"+self.human_number))
+		self.sim_width = int(rospy.get_param("pred/sim_width"+self.human_number))
+
+		# resolution (real meters)/(sim dim-1) (m/cell)
+		self.res_x = self.real_width/(self.sim_width-1)
+		self.res_y = self.real_height/(self.sim_height-1)
+
+		# (simulation) start and goal locations
+		self.sim_start = self.real_to_sim_coord(self.real_start)
+		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
+
+		print "real_start: ", self.real_start
+		print "sim_start: ", self.sim_start
 
 		# simulation forward prediction parameters
 		self.fwd_tsteps = rospy.get_param("pred/fwd_tsteps")
@@ -103,28 +128,15 @@ class HumanPrediction(object):
 		# stores dest x beta array with posterior prob of each beta
 		self.dest_beta_prob = None
 
+		print "sim height: ", self.sim_height
+		print "sim width: ", self.sim_width
+
+
+		print "res_x: ", self.res_x
+		print "res_y: ", self.res_y
+
 		# grid world representing the experimental environment
-		self.gridworld = GridWorldExpanded(self.sim_height, self.sim_width)
-
-		# --- real-world params ---# 
-
-		low = rospy.get_param("state/lower")
-		up = rospy.get_param("state/upper")
-
-		# get real-world measurements of experimental space
-		self.real_height = up[1] - low[1] 
-		self.real_width = up[0] - low[0] 
-		# store the lower and upper measurements
-		self.real_lower = low
-		self.real_upper = up
-
-		# (real-world) start and goal locations 
-		self.real_start = rospy.get_param("pred/human"+self.human_number+"_real_start")
-		self.real_goals = rospy.get_param("pred/human"+self.human_number+"_real_goals")
-
-		# (simulation) start and goal locations
-		self.sim_start = self.real_to_sim_coord(self.real_start)
-		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
+		self.gridworld = GridWorldExpanded(self.sim_width, self.sim_height)
 
 		# color to use to represent this human
 		self.color = rospy.get_param("pred/human"+self.human_number+"_color")
@@ -206,12 +218,12 @@ class HumanPrediction(object):
 			self.infer_occupancies() 
 	
 			# update human pose marker
-			self.human_marker_pub.publish(self.pose_to_marker(xypose, color=self.color))
+			#self.human_marker_pub.publish(self.pose_to_marker(xypose, color=self.color))
 
 			# publish occupancy grid list
 			if self.occupancy_grids is not None:
 				self.occu_pub.publish(self.grid_to_message())
-				self.visualize_occugrid(3)
+				self.visualize_occugrid(1)
 
 			# adjust the deltat based on the observed measurements
 			if self.prev_pos is not None:
@@ -347,9 +359,13 @@ class HumanPrediction(object):
 
 	def state_to_coor(self, state):
 		"""
-		Goes from 1D array value ot [x,y] in simulation
+		Goes from 1D array value to [x,y] in simulation
 		"""
-		return [state/self.sim_width, state%self.sim_width]
+		#print "state: ", state
+		#print "res_x: ", self.res_x
+		#print "res_y: ", self.res_y
+
+		return [int(state/self.sim_width), state%self.sim_width]
 
 	def sim_to_real_coord(self, sim_coord):
 		"""
@@ -431,6 +447,7 @@ class HumanPrediction(object):
 		"""
 		Visualizes occupancy grid for all grids in time
 		"""
+
 		if self.grid_vis_pub.get_num_connections() == 0:
 			rospy.loginfo_throttle(1.0, "visualize_occugrid: I'm lonely.")
 			return
@@ -454,15 +471,17 @@ class HumanPrediction(object):
 				if grid is not None:
 					for i in range(len(grid)):
 						(row, col) = self.state_to_coor(i)
+						#print "row, col", (row, col)
 						real_coord = self.sim_to_real_coord([row, col])
+						#print real_coord
 
 						color = ColorRGBA()
-						color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
+						color.a = 1.0#np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
 						color.r = np.sqrt(grid[i])
 						color.g = np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0
 						color.b = 0.9*np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0 + 0.5*np.sqrt(grid[i])
-						if grid[i] < self.prob_thresh:
-							color.a = 0.0
+						#if grid[i] < self.prob_thresh:
+						#	color.a = 0.0
 						marker.colors.append(color)
 
 						pt = Vector3()

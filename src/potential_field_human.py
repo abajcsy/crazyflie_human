@@ -47,7 +47,6 @@ class PotentialFieldHuman(object):
 			self.marker_pub.publish(self.pose_to_marker(color=self.color))
 			self.goal_pub.publish(marker_array)
 
-
 			# publish markers for goal spread and radius
 			#goal_spread_marker = self.radius_to_sphere_marker(self.real_goals[0], self.goal_field_spread+self.goal_radius)
 			#self.goal_spread_pub.publish(goal_spread_marker)
@@ -63,8 +62,8 @@ class PotentialFieldHuman(object):
 
 		# --- real-world params ---# 
 
-		low = rospy.get_param("state/lower")
-		up = rospy.get_param("state/upper")
+		low = rospy.get_param("state/lower"+self.human_number)
+		up = rospy.get_param("state/upper"+self.human_number)
 
 		# get real-world measurements of experimental space
 		self.real_height = up[1] - low[1] 
@@ -97,9 +96,14 @@ class PotentialFieldHuman(object):
 		# get he prefixes of all the robots so we can listen to their topics
 		self.robot_prefixes = rospy.get_param("sim/robot_prefixes")
 
-		# resolution (m/cell)
-		self.res_x = rospy.get_param("pred/resolution_x")
-		self.res_y = rospy.get_param("pred/resolution_y")
+
+		# measurements of gridworld 
+		self.sim_height = int(rospy.get_param("pred/sim_height"+self.human_number))
+		self.sim_width = int(rospy.get_param("pred/sim_width"+self.human_number))
+
+		# resolution (real meters)/(sim dim-1) (m/cell)
+		self.res_x = self.real_width/(self.sim_width-1)
+		self.res_y = self.real_height/(self.sim_height-1)
 
 		# store the human's height (visualization) and the previous pose
 		self.human_height = rospy.get_param("pred/human_height")
@@ -327,22 +331,6 @@ class PotentialFieldHuman(object):
 		self.human_pose.pose.position.x = self.prev_pose[0] 
 		self.human_pose.pose.position.y = self.prev_pose[1]
 		self.human_pose.pose.position.z = 0.0
-
-	def sim_to_real_coord(self, sim_coord):
-		"""
-		Takes [x,y] coordinate in simulation frame and returns a rotated and 
-		shifted	value in the ROS coordinates
-		"""
-		return [sim_coord[0]*self.res_x + self.real_lower[0], 
-						self.real_upper[1] - sim_coord[1]*self.res_y]
-
-	def real_to_sim_coord(self, real_coord):
-		"""
-		Takes [x,y] coordinate in the ROS real frame, and returns a rotated and 
-		shifted	value in the simulation frame
-		"""
-		return [int(round((real_coord[0] - self.real_lower[0])/self.res_x)),
-						int(round((self.real_upper[1] - real_coord[1])/self.res_y))]
 
 if __name__ == '__main__':
 	human = PotentialFieldHuman()
