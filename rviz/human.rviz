@@ -185,6 +185,70 @@ Visualization Manager:
         "": true
       Queue Size: 100
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /human_marker3
+      Name: Human3
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /human_marker4
+      Name: Human4
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /human_marker5
+      Name: Human5
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /human_marker6
+      Name: Human6
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /human_marker7
+      Name: Human7
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /human_marker8
+      Name: Human8
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /human_marker9
+      Name: Human9
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /human_marker10
+      Name: Human10
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /goal_markers1
@@ -201,18 +265,66 @@ Visualization Manager:
         "": true
       Queue Size: 100
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /goal_markers3
+      Name: GoalsHuman3
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /goal_markers4
+      Name: GoalsHuman4
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /goal_markers5
+      Name: GoalsHuman5
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /goal_markers6
+      Name: GoalsHuman6
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /goal_markers7
+      Name: GoalsHuman7
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /goal_markers8
+      Name: GoalsHuman8
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /occu_grid_marker1
-      Name: OccuGridHuman1
+      Marker Topic: /occu_grid_marker9
+      Name: OccuGridHuman9
       Namespaces:
         visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /occu_grid_marker2
-      Name: OccuGridHuman2
+      Marker Topic: /occu_grid_marker10
+      Name: OccuGridHuman10
       Namespaces:
         visualize: true
       Queue Size: 100
