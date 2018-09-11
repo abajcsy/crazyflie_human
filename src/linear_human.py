@@ -54,8 +54,8 @@ class LinearHuman(object):
 
 		# --- real-world params ---# 
 
-		low = rospy.get_param("state/lower")
-		up = rospy.get_param("state/upper")
+		low = rospy.get_param("state/lower"+self.human_number)
+		up = rospy.get_param("state/upper"+self.human_number)
 
 		# get real-world measurements of experimental space
 		self.real_height = up[1] - low[1] 
@@ -77,10 +77,14 @@ class LinearHuman(object):
 		self.human_pose = None
 
 		# --- simulation params ---# 
+		
+		# measurements of gridworld 
+		self.sim_height = int(rospy.get_param("pred/sim_height"+self.human_number))
+		self.sim_width = int(rospy.get_param("pred/sim_width"+self.human_number))
 
-		# resolution (m/cell)
-		self.res_x = rospy.get_param("pred/resolution_x")
-		self.res_y = rospy.get_param("pred/resolution_y")
+		# resolution (real meters)/(sim dim-1) (m/cell)
+		self.res_x = self.real_width/(self.sim_width-1)
+		self.res_y = self.real_height/(self.sim_height-1)
 
 		self.human_height = rospy.get_param("pred/human_height")
 

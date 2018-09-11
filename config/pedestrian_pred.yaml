@@ -1,8 +1,11 @@
 state:
 
   # Upper and lower bounds for experimental space (meters). [x, y, z]
-  lower: [-2.0, -1.04, 0] 
-  upper: [1.66, 2.62, 2.0] 
+  lower1: [-2.0, -1.04, 0] 
+  upper1: [1.66, 2.62, 2.0] 
+
+  lower2: [-2.0, -1.04, 0] 
+  upper2: [1.66, 2.62, 2.0] 
 
 pred:
   # Total number of humans that you will be simulating. Used 
@@ -21,8 +24,11 @@ pred:
   human2_color: [0.0, 0.0, 1.0]
 
   # Dimensions of the prediction map
-  sim_height: 26
-  sim_width: 26
+  sim_height1: 26
+  sim_width1: 26
+
+  sim_height2: 26
+  sim_width2: 26
 
   # Resolution, ex. (real meters)/(sim dim-1) (m/cell)
   resolution: 0.1464 

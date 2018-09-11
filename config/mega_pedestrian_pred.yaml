@@ -11,9 +11,6 @@ state:
   lower1: [0, -10, 0] 
   upper1: [10, 0, 2.0] 
 
-  #lower1: [-11.5, -15.0, 0.0]
-  #upper1: [11.7, -7.5, 2.0]
-
   lower2: [-10, 0, 0] 
   upper2: [0, 10, 2.0] 
 
@@ -52,6 +49,7 @@ pred:
   #human1_real_goals: [[-90, 75]] 
   #human1_real_start: [-15, -11.5] 
   #human1_real_goals: [[-7.5, 11.7]] 
+
   human1_real_start: [0, -10] 
   human1_real_goals: [[10, 0]] 
 
@@ -95,6 +93,7 @@ pred:
   human10_color: [1.0, 0.0, 0.0]
 
   # Dimensions of the prediction map (for each human)
+
   sim_height1: 40
   sim_width1: 40
 

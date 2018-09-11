@@ -96,7 +96,6 @@ class PotentialFieldHuman(object):
 		# get he prefixes of all the robots so we can listen to their topics
 		self.robot_prefixes = rospy.get_param("sim/robot_prefixes")
 
-
 		# measurements of gridworld 
 		self.sim_height = int(rospy.get_param("pred/sim_height"+self.human_number))
 		self.sim_width = int(rospy.get_param("pred/sim_width"+self.human_number))

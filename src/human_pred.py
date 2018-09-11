@@ -89,16 +89,13 @@ class HumanPrediction(object):
 		self.sim_height = int(rospy.get_param("pred/sim_height"+self.human_number))
 		self.sim_width = int(rospy.get_param("pred/sim_width"+self.human_number))
 
-		# resolution (real meters)/(sim dim-1) (m/cell)
-		self.res_x = self.real_width/(self.sim_width-1)
-		self.res_y = self.real_height/(self.sim_height-1)
+		# resolution (real meters)/(sim dim) (m/cell)
+		self.res_x = self.real_width/self.sim_width
+		self.res_y = self.real_height/self.sim_height
 
 		# (simulation) start and goal locations
 		self.sim_start = self.real_to_sim_coord(self.real_start)
 		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
-
-		print "real_start: ", self.real_start
-		print "sim_start: ", self.sim_start
 
 		# simulation forward prediction parameters
 		self.fwd_tsteps = rospy.get_param("pred/fwd_tsteps")
@@ -115,7 +112,6 @@ class HumanPrediction(object):
 
 		# stores list of beta values for each goal
 		self.beta_model = rospy.get_param("beta")
-		print "beta_model", self.beta_model
 		if self.beta_model == "irrational":
 			self.betas = rospy.get_param("pred/beta_irrational")
 		elif self.beta_model == "rational":
@@ -127,13 +123,6 @@ class HumanPrediction(object):
 		
 		# stores dest x beta array with posterior prob of each beta
 		self.dest_beta_prob = None
-
-		print "sim height: ", self.sim_height
-		print "sim width: ", self.sim_width
-
-
-		print "res_x: ", self.res_x
-		print "res_y: ", self.res_y
 
 		# grid world representing the experimental environment
 		self.gridworld = GridWorldExpanded(self.sim_width, self.sim_height)
@@ -205,9 +194,6 @@ class HumanPrediction(object):
 		if time_diff >= self.deltat:
 
 			self.prev_t += rospy.Duration.from_sec(self.deltat) 
-
-			# get the human's current state and make sure its always a valid location
-			#xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
 
 			# update the map with where the human is at the current time
 			self.update_human_traj(xypose)
@@ -282,7 +268,7 @@ class HumanPrediction(object):
 		dest_list = [self.gridworld.coor_to_state(g[0], g[1]) for g in self.sim_goals]
 
 		# Convert the human trajectory points from real-world to 2D grid values. 
-		traj = [self.real_to_sim_coord(x, round_vals=False) for x in self.real_human_traj] 
+		traj = [self.real_to_sim_coord(x, round_vals=True) for x in self.real_human_traj] 
   
   		# OPTION 1: The line below feeds in the entire human traj history so far
   		# 			and does a single bulk Bayesian inference step.
@@ -357,23 +343,13 @@ class HumanPrediction(object):
 
 		return action
 
-	def state_to_coor(self, state):
-		"""
-		Goes from 1D array value to [x,y] in simulation
-		"""
-		#print "state: ", state
-		#print "res_x: ", self.res_x
-		#print "res_y: ", self.res_y
-
-		return [int(state/self.sim_width), state%self.sim_width]
-
 	def sim_to_real_coord(self, sim_coord):
 		"""
 		Takes [x,y] coordinate in simulation frame and returns a rotated and 
 		shifted	value in the ROS coordinates
 		"""
-		return [sim_coord[0]*self.res_x + self.real_lower[0], 
-				self.real_upper[1] - sim_coord[1]*self.res_y]
+		return [self.real_lower[0] + 0.5*self.res_x + sim_coord[0]*self.res_x, 
+				self.real_upper[1] - 0.5*self.res_y - sim_coord[1]*self.res_y]
 
 	def real_to_sim_coord(self, real_coord, round_vals=True):
 		"""
@@ -384,14 +360,14 @@ class HumanPrediction(object):
 					False - gives a floating point value on the grid cell
 		"""
 		if round_vals:
-			x = round((real_coord[0] - self.real_lower[0])/self.res_x)
-			y = round((self.real_upper[1] - real_coord[1])/self.res_y)
+			x = np.floor((real_coord[0] - self.real_lower[0])/self.res_x)
+			y = np.floor((self.real_upper[1] - real_coord[1])/self.res_y)
 		else:
 			x = (real_coord[0] - self.real_lower[0])/self.res_x
 			y = (self.real_upper[1] - real_coord[1])/self.res_y
 
-		i_coord = np.minimum(self.sim_height-1, np.maximum(0.0,x));
-		j_coord = np.minimum(self.sim_width-1, np.maximum(0.0,y));
+		i_coord = np.minimum(self.sim_width-1, np.maximum(0.0,x));
+		j_coord = np.minimum(self.sim_height-1, np.maximum(0.0,y));
 
 		if round_vals:
 			return [int(i_coord), int(j_coord)]
@@ -470,10 +446,8 @@ class HumanPrediction(object):
 
 				if grid is not None:
 					for i in range(len(grid)):
-						(row, col) = self.state_to_coor(i)
-						#print "row, col", (row, col)
+						(row, col) = self.gridworld.state_to_coor(i)
 						real_coord = self.sim_to_real_coord([row, col])
-						#print real_coord
 
 						color = ColorRGBA()
 						color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
