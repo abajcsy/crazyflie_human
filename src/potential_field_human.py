@@ -4,7 +4,7 @@ import numpy as np
 from std_msgs.msg import String
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
 from visualization_msgs.msg import Marker
-from crazyflie_clean.msg import PositionVelocityState
+from crazyflie_msgs.msg import PositionVelocityStateStamped
 import time
 import sys
 
@@ -125,7 +125,7 @@ class PotentialFieldHuman(object):
 			def curried_callback(t):
 				return lambda m: self.robot_position_callback(t, m)
 
-			rospy.Subscriber(topic, PositionVelocityState, curried_callback(topic), queue_size=1)
+			rospy.Subscriber(topic, PositionVelocityStateStamped, curried_callback(topic), queue_size=1)
 
 		# Visualize the spread and the radius of the goal.
 		# 
@@ -149,11 +149,11 @@ class PotentialFieldHuman(object):
 		# Convert from PositionVelocityState to PoseStamped message for 
 		# consistency with human. 
 		robot_pose = PoseStamped()
-		robot_pose.pose.position.x = msg.x 
-		robot_pose.pose.position.y = msg.y
-		robot_pose.pose.position.z = msg.z
+		robot_pose.pose.position.x = msg.state.x 
+		robot_pose.pose.position.y = msg.state.y
+		robot_pose.pose.position.z = msg.state.z
 
-		self.other_robot_poses[topic] = msg
+		self.other_robot_poses[topic] = robot_pose
 
 	def pose_to_marker(self, color=[1.0, 0.0, 0.0]):
 		"""
