@@ -23,11 +23,11 @@ if __name__ == '__main__':
 	# get real-world measurements of experimental space
 	#lower = [-15, -11.5, 0] 
 	#upper = [15, 11.7, 2.0] 
-	lower = [-4.0, -1.04, 0] 
-	upper = [3.66, 2.62, 2.0] 
+	lower = [-10.0, -3.0, 0] 
+	upper = [15.0, 2.0, 2.0] 
 	height = upper[1] - lower[1]
 	width = upper[0] - lower[0]
-
+	
 	# Construct the world message
 	marker = Marker()
 	marker.header.frame_id = "/world"
