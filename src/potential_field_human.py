@@ -101,8 +101,8 @@ class PotentialFieldHuman(object):
 		self.sim_width = int(rospy.get_param("pred/sim_width"+self.human_number))
 
 		# resolution (real meters)/(sim dim-1) (m/cell)
-		self.res_x = self.real_width/(self.sim_width-1)
-		self.res_y = self.real_height/(self.sim_height-1)
+		self.res_x = self.real_width/self.sim_width
+		self.res_y = self.real_height/self.sim_height
 
 		# store the human's height (visualization) and the previous pose
 		self.human_height = rospy.get_param("pred/human_height")

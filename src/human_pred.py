@@ -209,7 +209,7 @@ class HumanPrediction(object):
 			# publish occupancy grid list
 			if self.occupancy_grids is not None:
 				self.occu_pub.publish(self.grid_to_message())
-				self.visualize_occugrid(3)
+				self.visualize_occugrid(2)
 
 			# adjust the deltat based on the observed measurements
 			if self.prev_pos is not None:
