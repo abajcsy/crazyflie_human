@@ -27,7 +27,7 @@
 	<!-- Prediction model. -->
 	<arg name="prediction_model" default="adaptive" />
 
-	<!-- ========================== Human 1. ========================== -->
+	<!-- ========================== Human 1. ========================== 
 	<group ns="$(arg human1_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human1)" />
@@ -57,9 +57,9 @@
 			<arg name="human_number" value="$(arg human4)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 
-	========================== Human 5. ========================== 
+	<!-- ========================== Human 5. ========================== -->
 	 <group ns="$(arg human5_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human5)" />
@@ -67,7 +67,7 @@
 		</include>
 	</group>
 
-	========================== Human 6. ========================== 
+	<!-- ========================== Human 6. ========================== 
 	 <group ns="$(arg human6_namespace)">
 		<include file="$(find crazyflie_human)/launch/mega_simulated_human_launcher.launch">
 			<arg name="human_number" value="$(arg human6)" />
@@ -105,7 +105,7 @@
 			<arg name="human_number" value="$(arg human10)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>
+	</group>-->
 
 
 	<!-- Visualize the background image. -->

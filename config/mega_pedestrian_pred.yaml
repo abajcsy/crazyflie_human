@@ -2,87 +2,75 @@ state:
 
   # Upper and lower bounds for experimental space (meters). [x, y, z]
   # Do this for each human
-  #lower1: [-15, -11.5, 0] 
-  #upper1: [15, 11.7, 2.0] 
-  
-  #lower1: [-15, -11.5, 0] 
-  #upper1: [-7.5, 11.7, 2.0] 
+  lower1: [10.0, -5.0, 0.0] 
+  upper1: [12.0, 5.0, 2.0] 
 
-  lower1: [0.0, -10.0, 0.0] 
-  upper1: [10.0, 0.0, 2.0] 
+  lower2: [-10.0, -6.0, 0.0] 
+  upper2: [-8.0, 4.0, 2.0] 
 
-  lower2: [-10.0, 0.0, 0.0] 
-  upper2: [0.0, 10.0, 2.0] 
+  lower3: [-10.0, -8.0, 0.0] 
+  upper3: [-8.0, 6.0, 2.0]
 
-  lower3: [-10.0, 0.0, 0.0] 
-  upper3: [0.0, 10.0, 2.0]
+  lower4: [-10.0, -10.0, 0.0] 
+  upper4: [-5.0, -2.0, 2.0]  
 
+  lower5: [-4.0, -6.0, 0.0] 
+  upper5: [2.0, 1.0, 2.0]  
 
-  lower4: [0.0, 0.0, 0.0] 
-  upper4: [10.0, 10.0, 2.0]  
+  lower6: [-7.0, 8.0, 0.0] 
+  upper6: [12.0, 10.0, 2.0]  
 
-  lower5: [-10.0, -5.0, 0.0] 
-  upper5: [0.0, 5.0, 2.0]  
+  lower7: [-7.0, 5.0, 0.0] 
+  upper7: [5.0, 10.0, 2.0]  
 
-  lower6: [0.0, -5.0, 0.0] 
-  upper6: [10.0, 5.0, 2.0]  
+  lower8: [10.0, -6.0, 0.0] 
+  upper8: [14.0, 2.0, 2.0]  
 
-  lower7: [-10.0, -5.0, 0.0] 
-  upper7: [0.0, 5.0, 2.0]  
-
-  lower8: [-5.0, -10.0, 0.0] 
-  upper8: [5.0, 0.0, 2.0]  
-
-  lower9: [0.0, -5.0, 0.0] 
-  upper9: [10.0, 5.0, 2.0]  
+  lower9: [6.0, 1.0, 0.0] 
+  upper9: [14.0, 10.0, 2.0]  
 
   lower10: [-10.0, -10.0, 0.0] 
-  upper10: [0.0, 0.0, 2.0]  
+  upper10: [0.0, -8.0, 2.0]  
 
 pred:
   # Total number of humans that you will be simulating. Used 
   # by potential_field_human.py to avoid other humans.
-  total_number_of_humans: 10
+  total_number_of_humans: 1
 
   # Start position of human(s) and list of potential goal locations
-  #human1_real_start: [-90, -75] 
-  #human1_real_goals: [[-90, 75]] 
-  #human1_real_start: [-15, -11.5] 
-  #human1_real_goals: [[-7.5, 11.7]] 
+  human1_real_start: [10.0, -5.0] 
+  human1_real_goals: [[12.0, 5.0]] 
 
-  human1_real_start: [0, -10] 
-  human1_real_goals: [[10, 0]] 
+  human2_real_start: [-10.0, 4.0] 
+  human2_real_goals: [[-8.0, -6.0]] 
 
-  human2_real_start: [-10, 0] 
-  human2_real_goals: [[0, 10]] 
+  human3_real_start: [-10.0, -8.0] 
+  human3_real_goals: [[-9.0, 6.0]] 
 
-  human3_real_start: [-3, 8] 
-  human3_real_goals: [[-9, 0]] 
+  human4_real_start: [-5.0, -10.0] 
+  human4_real_goals: [[-10.0, -2.0]] 
 
-  human4_real_start: [10,9] 
-  human4_real_goals: [[0, 7]] 
+  human5_real_start: [2.0, -6.0] 
+  human5_real_goals: [[-4.0, 1.0]] 
 
-  human5_real_start: [-10,5] 
-  human5_real_goals: [[-10, -5]] 
+  human6_real_start: [12.0, 9.0] 
+  human6_real_goals: [[-7.0, 9.0]] 
 
-  human6_real_start: [8,5] 
-  human6_real_goals: [[7, -5]] 
+  human7_real_start: [-7.0, 5.0] 
+  human7_real_goals: [[5.0, 10.0]] 
 
-  human7_real_start: [-10,-5] 
-  human7_real_goals: [[-5, 5]] 
+  human8_real_start: [10.0, 2.0] 
+  human8_real_goals: [[14.0, -6.0]] 
 
-  human8_real_start: [5,-8] 
-  human8_real_goals: [[-5, -9]] 
+  human9_real_start: [6.0, 10.0] 
+  human9_real_goals: [[14.0, 1.0]] 
 
-  human9_real_start: [7,-5] 
-  human9_real_goals: [[9, 5]] 
-
-  human10_real_start: [-10,-9] 
-  human10_real_goals: [[0, -9]] 
+  human10_real_start: [-10.0, -10.0] 
+  human10_real_goals: [[0.0, -8.0]] 
 
   # Color coding for human visualization (RGB)
-  human1_color: [1.0, 0.0, 0.0]
-  human2_color: [1.0, 0.0, 0.0]
+  human1_color: [1.0, 0.0, 1.0]
+  human2_color: [1.0, 0.0, 1.0]
   human3_color: [1.0, 0.0, 0.0]
   human4_color: [1.0, 0.0, 0.0]
   human5_color: [1.0, 0.0, 0.0]
@@ -90,44 +78,38 @@ pred:
   human7_color: [1.0, 0.0, 0.0]
   human8_color: [1.0, 0.0, 0.0]
   human9_color: [1.0, 0.0, 0.0]
-  human10_color: [1.0, 0.0, 0.0]
+  human10_color: [1.0, 0.0, 1.0]
 
   # Dimensions of the prediction map (for each human)
 
   sim_height1: 40
-  sim_width1: 40
+  sim_width1: 8
 
   sim_height2: 40
-  sim_width2: 40
+  sim_width2: 8
 
-  sim_height3: 40
-  sim_width3: 40
+  sim_height3: 56
+  sim_width3: 8
 
-  sim_height3: 40
-  sim_width3: 40
+  sim_height4: 32
+  sim_width4: 20
 
-  sim_height4: 40
-  sim_width4: 40
+  sim_height5: 28
+  sim_width5: 24
 
-  sim_height5: 40
-  sim_width5: 40
-
-  sim_height5: 40
-  sim_width5: 40
-
-  sim_height6: 40
-  sim_width6: 40
+  sim_height6: 8
+  sim_width6: 76
   
-  sim_height7: 40
-  sim_width7: 40
+  sim_height7: 20
+  sim_width7: 48
   
-  sim_height8: 40
-  sim_width8: 40
+  sim_height8: 32
+  sim_width8: 16
  
-  sim_height9: 40
-  sim_width9: 40
+  sim_height9: 36
+  sim_width9: 32
 
-  sim_height10: 40
+  sim_height10: 8
   sim_width10: 40
 
   # Num timesteps into the future to predict

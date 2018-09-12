@@ -12,6 +12,12 @@ uint32 width
 # Map height [cells]
 uint32 height
 
+# Lower and upper bounds in absolute Cartesian coordinates (m).
+float32 lower_x
+float32 lower_y
+float32 upper_x
+float32 upper_y
+
 # Center of the map
 geometry_msgs/Pose origin
 

@@ -489,6 +489,10 @@ class HumanPrediction(object):
 			grid_msg.resolution = self.res_x
 			grid_msg.width = self.sim_width
 			grid_msg.height = self.sim_height
+			grid_msg.lower_x = self.real_lower[0]
+			grid_msg.lower_y = self.real_lower[1]
+			grid_msg.upper_x = self.real_upper[0]
+			grid_msg.upper_y = self.real_upper[1]
 
 			# Rotated maps are not supported... 
 			origin_x=0.0 

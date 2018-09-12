@@ -100,6 +100,10 @@ class PotentialFieldHuman(object):
 		self.sim_height = int(rospy.get_param("pred/sim_height"+self.human_number))
 		self.sim_width = int(rospy.get_param("pred/sim_width"+self.human_number))
 
+		print self.human_number, " real_width: ", self.real_width
+		print self.human_number, " real_height: ", self.real_height 
+		print self.human_number, " sim_width: ", self.sim_width
+		print self.human_number, " sim_height: ", self.sim_height 
 		# resolution (real meters)/(sim dim-1) (m/cell)
 		self.res_x = self.real_width/self.sim_width
 		self.res_y = self.real_height/self.sim_height
@@ -219,6 +223,9 @@ class PotentialFieldHuman(object):
 		marker.color.r = color[0]
 		marker.color.g = color[1]
 		marker.color.b = color[2]
+
+		#print self.human_number, " res x: ", self.res_x
+		#print self.human_number, " res y: ", self.res_y
 
 		if self.human_pose is not None:
 			marker.pose.position.x = self.human_pose.pose.position.x 
