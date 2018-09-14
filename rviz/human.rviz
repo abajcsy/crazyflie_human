@@ -4,6 +4,7 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Global Options1
         - /Status1
         - /TF1/Frames1
       Splitter Ratio: 0.5
@@ -167,7 +168,8 @@ Visualization Manager:
       Marker Topic: /vis/trajHY8
       Name: Trajectory5
       Namespaces:
-        {}
+        lines: true
+        spheres: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -288,7 +290,7 @@ Visualization Manager:
       Marker Topic: /human_marker1
       Name: Human1
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -296,7 +298,7 @@ Visualization Manager:
       Marker Topic: /human_marker2
       Name: Human2
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -304,7 +306,7 @@ Visualization Manager:
       Marker Topic: /human_marker3
       Name: Human3
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -312,7 +314,7 @@ Visualization Manager:
       Marker Topic: /human_marker4
       Name: Human4
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -320,7 +322,7 @@ Visualization Manager:
       Marker Topic: /human_marker5
       Name: Human5
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -328,7 +330,7 @@ Visualization Manager:
       Marker Topic: /human_marker6
       Name: Human6
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -336,7 +338,7 @@ Visualization Manager:
       Marker Topic: /human_marker7
       Name: Human7
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -344,7 +346,7 @@ Visualization Manager:
       Marker Topic: /human_marker8
       Name: Human8
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -352,7 +354,7 @@ Visualization Manager:
       Marker Topic: /human_marker9
       Name: Human9
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -360,7 +362,7 @@ Visualization Manager:
       Marker Topic: /human_marker10
       Name: Human10
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -368,7 +370,7 @@ Visualization Manager:
       Marker Topic: /goal_markers1
       Name: GoalsHuman1
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -376,7 +378,7 @@ Visualization Manager:
       Marker Topic: /goal_markers2
       Name: GoalsHuman2
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -384,7 +386,7 @@ Visualization Manager:
       Marker Topic: /goal_markers3
       Name: GoalsHuman3
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -392,7 +394,7 @@ Visualization Manager:
       Marker Topic: /goal_markers4
       Name: GoalsHuman4
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -400,7 +402,7 @@ Visualization Manager:
       Marker Topic: /goal_markers5
       Name: GoalsHuman5
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -408,7 +410,7 @@ Visualization Manager:
       Marker Topic: /goal_markers6
       Name: GoalsHuman6
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -416,7 +418,7 @@ Visualization Manager:
       Marker Topic: /goal_markers7
       Name: GoalsHuman7
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -424,7 +426,7 @@ Visualization Manager:
       Marker Topic: /goal_markers8
       Name: GoalsHuman8
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -432,7 +434,7 @@ Visualization Manager:
       Marker Topic: /goal_markers9
       Name: GoalsHuman9
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -440,7 +442,7 @@ Visualization Manager:
       Marker Topic: /goal_markers10
       Name: GoalsHuman10
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -448,7 +450,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker1
       Name: OccuGridHuman1
       Namespaces:
-        {}
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -456,7 +458,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker2
       Name: OccuGridHuman2
       Namespaces:
-        {}
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -464,7 +466,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker3
       Name: OccuGridHuman3
       Namespaces:
-        {}
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -472,7 +474,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker4
       Name: OccuGridHuman4
       Namespaces:
-        {}
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -480,7 +482,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker5
       Name: OccuGridHuman5
       Namespaces:
-        {}
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -488,7 +490,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker6
       Name: OccuGridHuman6
       Namespaces:
-        {}
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -496,7 +498,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker7
       Name: OccuGridHuman7
       Namespaces:
-        {}
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -504,7 +506,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker8
       Name: OccuGridHuman8
       Namespaces:
-        {}
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -512,7 +514,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker9
       Name: OccuGridHuman9
       Namespaces:
-        {}
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -520,7 +522,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker10
       Name: OccuGridHuman10
       Namespaces:
-        {}
+        visualize: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -560,7 +562,7 @@ Visualization Manager:
       Marker Topic: /vis/goalHY8
       Name: GoalRobot5
       Namespaces:
-        {}
+        sphere: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -573,7 +575,7 @@ Visualization Manager:
       Value: false
   Enabled: true
   Global Options:
-    Background Color: 255; 255; 255
+    Background Color: 0; 255; 0
     Default Light: true
     Fixed Frame: world
     Frame Rate: 30
@@ -595,21 +597,26 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
-      Class: rviz/TopDownOrtho
+      Class: rviz/ThirdPersonFollower
+      Distance: 28
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Focal Point:
+        X: 1.78082204
+        Y: -5.6611557
+        Z: 0
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Scale: 40.5824051
+      Pitch: 1.56979632
       Target Frame: <Fixed Frame>
-      Value: TopDownOrtho (rviz)
-      X: 3.62352633
-      Y: 0.172806948
+      Value: ThirdPersonFollower (rviz)
+      Yaw: 4.72357464
     Saved: ~
 Window Geometry:
   Displays:
@@ -617,7 +624,7 @@ Window Geometry:
   Height: 1056
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000016a00000399fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006100fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002800000399000000d700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000011300000394fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000394000000ad00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073f0000003bfc0100000002fb0000000800540069006d006501000000000000073f0000030000fffffffb0000000800540069006d00650100000000000004500000000000000000000005cf0000039900000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000016a00000399fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006100fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002800000399000000d700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000399fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000002800000399000000ad00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073f0000003bfc0100000002fb0000000800540069006d006501000000000000073f0000030000fffffffb0000000800540069006d00650100000000000004500000000000000000000004ba0000039900000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:

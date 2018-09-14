@@ -144,6 +144,9 @@ class HumanPrediction(object):
 		# compute the timestep (seconds/cell)
 		self.deltat = self.res_x/self.human_vel
 
+		# prediction compute time per run (used for benchmarks)
+		self.pred_compute_times = None
+
 		# TODO This is for debugging.
 		print "----- Running prediction for one human : -----"
 		print "	- human: ", self.human_number
@@ -198,10 +201,28 @@ class HumanPrediction(object):
 			# update the map with where the human is at the current time
 			self.update_human_traj(xypose)
 
-			s = rospy.Time().now()
+			# ====== METRICS ====== #
+			#s = rospy.Time().now()
+			# ====== METRICS ====== #
 
 			# infer the new human occupancy map from the current state
 			self.infer_occupancies() 
+			
+			# ====== METRICS ====== #
+			"""
+			e = rospy.Time().now()
+			compute_time = (e-s).to_sec()
+
+			if self.pred_compute_times is None:
+				self.pred_compute_times = [compute_time]
+			else:
+				self.pred_compute_times.append(compute_time)
+
+			average_compute_time = sum(self.pred_compute_times)/len(self.pred_compute_times)
+
+			print "Human ", self.human_number, " Avg Compute Time: ", average_compute_time
+			"""
+			# ====== METRICS ====== #
 	
 			# update human pose marker
 			#self.human_marker_pub.publish(self.pose_to_marker(xypose, color=self.color))

@@ -28,7 +28,7 @@ class PotentialFieldHuman(object):
 		#make a marker array for all the goals
 		marker_array = MarkerArray()
 		for g in self.real_goals:
-			marker = self.state_to_marker(xy=g, color=[0, 0, 1])#self.color)
+			marker = self.state_to_marker(xy=g, color=[0.0, 0.0, 0.0])#self.color)
 			marker_array.markers.append(marker)
 
 		# Re-number the marker IDs
@@ -278,24 +278,27 @@ class PotentialFieldHuman(object):
 		y_obs_grad = 0.0
 
 		# Compute goal-gradient based on the distance from human to goal.
-		for goal in self.real_goals:
-			dist_to_goal = np.linalg.norm(np.array(goal) - np.array(self.prev_pose)) 
-			theta = np.arctan2(goal[1] - self.prev_pose[1], goal[0] - self.prev_pose[0])
-			if dist_to_goal < self.goal_radius:
-				# Stop if inside of goal.
-				x_goal_grad += 0.0
-				y_goal_grad += 0.0
-			elif dist_to_goal >= self.goal_radius and \
-				dist_to_goal <= self.goal_radius + self.goal_field_spread:
-				# Within the spread of the potential field but outside the 
-				# goal's radius, the gradient is proportional to the distance 
-				# between the agent and the goal.
-				x_goal_grad += self.alpha * (dist_to_goal - self.goal_radius) * np.cos(theta)
-				y_goal_grad += self.alpha * (dist_to_goal - self.goal_radius) * np.sin(theta)
-			else:
-				# Outside the potential field spread, gradient is maximal.
-				x_goal_grad += self.alpha * self.goal_field_spread * np.cos(theta)
-				y_goal_grad += self.alpha * self.goal_field_spread * np.sin(theta)
+		#for goal in self.real_goals:
+
+		# HACK: ONLY ATTRACTED TO THE FIRST GOAL!
+		goal = self.real_goals[0]
+		dist_to_goal = np.linalg.norm(np.array(goal) - np.array(self.prev_pose)) 
+		theta = np.arctan2(goal[1] - self.prev_pose[1], goal[0] - self.prev_pose[0])
+		if dist_to_goal < self.goal_radius:
+			# Stop if inside of goal.
+			x_goal_grad += 0.0
+			y_goal_grad += 0.0
+		elif dist_to_goal >= self.goal_radius and \
+			dist_to_goal <= self.goal_radius + self.goal_field_spread:
+			# Within the spread of the potential field but outside the 
+			# goal's radius, the gradient is proportional to the distance 
+			# between the agent and the goal.
+			x_goal_grad += self.alpha * (dist_to_goal - self.goal_radius) * np.cos(theta)
+			y_goal_grad += self.alpha * (dist_to_goal - self.goal_radius) * np.sin(theta)
+		else:
+			# Outside the potential field spread, gradient is maximal.
+			x_goal_grad += self.alpha * self.goal_field_spread * np.cos(theta)
+			y_goal_grad += self.alpha * self.goal_field_spread * np.sin(theta)
 
 		# Compute obstacle-gradient based on the distance from human 
 		# to other humans AND from human to other robots.
