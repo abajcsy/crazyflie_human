@@ -16,9 +16,9 @@ from crazyflie_human.msg import OccupancyGridTime, ProbabilityGrid
 # Python path so that we can import the pedestrian_prediction module.
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../../")
 
-from pedestrian_prediction.pp.mdp import GridWorldMDP
-from pedestrian_prediction.pp.mdp.expanded import GridWorldExpanded
-from pedestrian_prediction.pp.inference import hardmax as inf
+from pp.mdp import GridWorldMDP
+from pp.mdp.expanded import GridWorldExpanded
+from pp.inference import hardmax as inf
 
 Actions = GridWorldMDP.Actions
 
