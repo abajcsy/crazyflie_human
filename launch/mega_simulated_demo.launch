@@ -105,9 +105,9 @@
 			<arg name="human_number" value="$(arg human10)" />
 			<arg name="beta" value="$(arg prediction_model)" />
 		</include>
-	</group>-->
+	</group>
 
 
-	<!-- Visualize the background image. -->
-	<node name="bg_visualizer" pkg="crazyflie_human" type="bg_image_border_publisher.py" output="screen"/> 	
+	<!-- Visualize the background image. 
+	<node name="bg_visualizer" pkg="crazyflie_human" type="bg_image_border_publisher.py" output="screen"/> 	-->
 </launch>

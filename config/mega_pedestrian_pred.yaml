@@ -2,8 +2,11 @@ state:
 
   # Upper and lower bounds for experimental space (meters). [x, y, z]
   # Do this for each human
-  lower1: [10.0, -5.0, 0.0] 
-  upper1: [12.0, 5.0, 2.0] 
+
+  #lower1: [10.0, -5.0, 0.0] 
+  #upper1: [12.0, 5.0, 2.0] 
+  lower1: [4.0, -10.0, 0.0] 
+  upper1: [15.0, 2.0, 2.0] 
 
   lower2: [-10.0, -6.0, 0.0] 
   upper2: [-8.0, 4.0, 2.0] 
@@ -11,10 +14,10 @@ state:
   lower3: [-10.0, -8.0, 0.0] 
   upper3: [-8.0, 6.0, 2.0]
 
-  #lower4: [-10.0, -10.0, 0.0] 
-  #upper4: [-5.0, -2.0, 2.0]  
-  lower4: [-7.0, -3.0, 0.0]
-  upper4: [1.0, 3.0, 2.0]
+  #lower4: [-7.0, -3.0, 0.0]
+  #upper4: [1.0, 3.0, 2.0]
+  lower4: [4.0, -10.0, 0.0] 
+  upper4: [15.0, 2.0, 2.0] 
 
   lower5: [-4.0, -6.0, 0.0] 
   upper5: [2.0, 1.0, 2.0]  
@@ -25,11 +28,15 @@ state:
   lower7: [-7.0, 5.0, 0.0] 
   upper7: [5.0, 10.0, 2.0]  
 
-  lower8: [10.0, -6.0, 0.0] 
-  upper8: [14.0, 2.0, 2.0]  
+  #lower8: [10.0, -6.0, 0.0] 
+  #upper8: [14.0, 2.0, 2.0]  
+  lower8: [4.0, -10.0, 0.0] 
+  upper8: [15.0, 2.0, 2.0] 
 
-  lower9: [6.0, 1.0, 0.0] 
-  upper9: [14.0, 10.0, 2.0]  
+  #lower9: [6.0, 1.0, 0.0] 
+  #upper9: [14.0, 10.0, 2.0]  
+  lower9: [6.0, 3.0, 0.0] 
+  upper9: [14.0, 10.0, 2.0]
 
   lower10: [-10.0, -10.0, 0.0] 
   upper10: [0.0, -8.0, 2.0]  
@@ -40,8 +47,10 @@ pred:
   total_number_of_humans: 10
 
   # Start position of human(s) and list of potential goal locations
-  human1_real_start: [10.0, -5.0] 
-  human1_real_goals: [[12.0, 5.0]] 
+  #human1_real_start: [10.0, -5.0] 
+  #human1_real_goals: [[12.0, 5.0]] 
+  human1_real_start: [9.0, -9.0]
+  human1_real_goals: [[14.0, 1.0], [13.0, -6.0], [4.0, -10.0]] # add human8, human 4's goals
 
   human2_real_start: [-10.0, 4.0] 
   human2_real_goals: [[-8.0, -6.0]] 
@@ -53,8 +62,10 @@ pred:
   #human4_real_goals: [[-10.0, -2.0]] 
   #human4_real_start: [-5.0, -10.0] #[2.0, -8.0] 
   #human4_real_goals: [[-10.0, -2.0]] #[[7.0, 4.0]] #[[2.0, 4.0]] 
-  human4_real_start: [-6.0, -2.0] 
-  human4_real_goals: [[-1.0, 2.0], [-4.0, 1.0]] # add human 5's goals 
+  #human4_real_start: [-6.0, -2.0] 
+  #human4_real_goals: [[-1.0, 2.0], [-4.0, 1.0]] # add human 5's goals 
+  human4_real_start: [15.0, -6.0]
+  human4_real_goals: [[4.0, -10.0], [14.0, 1.0], [13.0, -6.0]] # add human8, human1's goals
 
   human5_real_start: [2.0, -6.0] 
   human5_real_goals: [[-4.0, 1.0]] 
@@ -65,11 +76,15 @@ pred:
   human7_real_start: [-7.0, 5.0] 
   human7_real_goals: [[5.0, 10.0], [-7.0, 9.0]] # add human6's goals 
 
-  human8_real_start: [10.0, 2.0] 
-  human8_real_goals: [[14.0, -6.0], [14.0, 1.0]] # add human9's goals 
+  #human8_real_start: [10.0, 2.0] 
+  #human8_real_goals: [[14.0, -6.0], [14.0, 1.0]] # add human9's goals 
+  human8_real_start: [11.0, 1.0]
+  human8_real_goals: [[13.0, -6.0], [14.0, 1.0], [4.0, -10.0]] # add human4, human1's goals
 
+  #human9_real_start: [6.0, 10.0] 
+  #human9_real_goals: [[14.0, 1.0], [12.0, 5.0]] # add human1's goals 
   human9_real_start: [6.0, 10.0] 
-  human9_real_goals: [[14.0, 1.0], [12.0, 5.0]] # add human1's goals 
+  human9_real_goals: [[14.0, 3.0]]
 
   human10_real_start: [-10.0, -10.0] 
   human10_real_goals: [[0.0, -8.0]] 
@@ -88,8 +103,8 @@ pred:
 
   # Dimensions of the prediction map (for each human)
 
-  sim_height1: 40
-  sim_width1: 8
+  sim_height1: 52
+  sim_width1: 48
 
   sim_height2: 40
   sim_width2: 8
@@ -97,8 +112,8 @@ pred:
   sim_height3: 56
   sim_width3: 8
 
-  sim_height4: 28
-  sim_width4: 36
+  sim_height4: 52
+  sim_width4: 48
 
   sim_height5: 28
   sim_width5: 24
@@ -109,11 +124,11 @@ pred:
   sim_height7: 20
   sim_width7: 48
   
-  sim_height8: 32
-  sim_width8: 16
+  sim_height8: 52
+  sim_width8: 48
  
-  sim_height9: 36
-  sim_width9: 32
+  sim_height9: 32
+  sim_width9: 36
 
   sim_height10: 8
   sim_width10: 40
@@ -150,7 +165,7 @@ sim:
   #   alpha  -- attraction amount
   #   goal_s -- potential field spread (m)
   #   goal_r -- goal radius (m)
-  alpha_pot_field: 0.16
+  alpha_pot_field: 0.12
   goal_s: 1
   goal_r: 0.5
 
@@ -158,6 +173,6 @@ sim:
   #   beta  -- obstacle's repulsion amount
   #   obstacle_s -- potential field spread (m)
   #   obstacle_r -- obstacle radius (m)
-  beta_pot_field: 0.5
+  beta_pot_field: 0.2
   obstacle_s: 1
   obstacle_r: 0.25

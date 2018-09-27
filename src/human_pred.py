@@ -231,7 +231,7 @@ class HumanPrediction(object):
 			if self.occupancy_grids is not None:
 				self.occu_pub.publish(self.grid_to_message())
 				self.visualize_occugrid(2)
-
+				
 			# adjust the deltat based on the observed measurements
 			if self.prev_pos is not None:
 				self.human_vel = np.linalg.norm((np.array(xypose) - np.array(self.prev_pos)))/time_diff
@@ -463,8 +463,8 @@ class HumanPrediction(object):
 			marker.scale.y = self.res_y
 			marker.scale.z = self.human_height
 			for t in range(time):
-				grid = self.interpolate_grid(t)
-
+				#grid = self.interpolate_grid(t)
+				grid = self.occupancy_grids[t]
 				if grid is not None:
 					for i in range(len(grid)):
 						(row, col) = self.gridworld.state_to_coor(i)

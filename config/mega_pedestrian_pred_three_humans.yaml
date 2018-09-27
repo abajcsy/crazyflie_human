@@ -1,0 +1,87 @@
+state:
+
+  # Upper and lower bounds for experimental space (meters). [x, y, z]
+  # Do this for each human
+  lower1: [4.0, -10.0, 0.0] 
+  upper1: [15.0, 2.0, 2.0] 
+
+  lower2: [4.0, -10.0, 0.0] 
+  upper2: [15.0, 2.0, 2.0] 
+
+  lower3: [4.0, -10.0, 0.0] 
+  upper3: [15.0, 2.0, 2.0] 
+
+pred:
+  # Total number of humans that you will be simulating. Used 
+  # by potential_field_human.py to avoid other humans.
+  total_number_of_humans: 3
+
+  # Start position of human(s) and list of potential goal locations
+  human1_real_start: [9.0, -9.0]
+  human1_real_goals: [[14.0, 1.0], [13.0, -6.0], [4.0, -10.0]] # add human8, human 4's goals
+
+  human2_real_start: [15.0, -6.0]
+  human2_real_goals: [[4.0, -10.0], [14.0, 1.0], [13.0, -6.0]] # add human8, human1's goals
+
+  human3_real_start: [11.0, 1.0]
+  human3_real_goals: [[13.0, -6.0], [14.0, 1.0], [4.0, -10.0]] # add human4, human1's goals
+
+
+  # Color coding for human visualization (RGB)
+  human1_color: [1.0, 0.0, 0.0]
+  human2_color: [1.0, 0.0, 0.0]
+  human3_color: [1.0, 0.0, 0.0]
+  # Dimensions of the prediction map (for each human)
+
+  sim_height1: 52
+  sim_width1: 48
+
+  sim_height2: 52
+  sim_width2: 48
+
+  sim_height3: 52
+  sim_width3: 48
+
+  # Num timesteps into the future to predict
+  fwd_tsteps: 10
+
+  # Initial betas depending on model
+  beta_adaptive: [0.1, 0.3, 1.0, 3.0, 10.0]
+  beta_rational: [0.05]
+  beta_irrational: [10.0]
+
+  # Human's height (in meters)
+  human_height: 1.67
+
+  # Human's walking speed (m/s) -- human walking speed is 1.4 m/s
+  human_vel: 0.7 
+
+  # Probability threshold 
+  prob_thresh: 0.01
+
+  # Process noise (epsilon-stubborn model)
+  epsilon_dest: 0.02
+  epsilon_beta: 0.02
+
+sim:
+  # Timestep 
+  dt: 0.01
+
+  # Specify the robot prefixes to listen to (obstacles)
+  robot_prefixes: [HY6", "HY7", "HY8"]
+
+  # Potential field goal parameters
+  #   alpha  -- attraction amount
+  #   goal_s -- potential field spread (m)
+  #   goal_r -- goal radius (m)
+  alpha_pot_field: 0.11
+  goal_s: 1
+  goal_r: 0.5
+
+  # Potential field obstacle parameters
+  #   beta  -- obstacle's repulsion amount
+  #   obstacle_s -- potential field spread (m)
+  #   obstacle_r -- obstacle radius (m)
+  beta_pot_field: 0.2
+  obstacle_s: 1
+  obstacle_r: 0.25
