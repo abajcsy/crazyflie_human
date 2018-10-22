@@ -1,0 +1,68 @@
+state:
+
+  # Upper and lower bounds for experimental space (meters). [x, y, z]
+  lower: [-2.0, -1.04, 0] 
+  upper: [1.66, 2.62, 2.0] 
+
+pred:
+
+  # Start position of human(s) and list of potential goal locations
+  car_real_start: [1.63, 0.46, 0.0] 
+  car_real_goals: [[0.0, 0.0, 1.57079633], [-1.44, 0.44, 0.0]] 
+
+  # color coding for human visualization (RGB)
+  car_color: [1.0, 0.0, 0.0]
+
+  # Dimensions of the prediction map
+  sim_height: 26
+  sim_width: 26
+
+  # Resolution, ex. (real meters)/(sim dim-1) (m/cell)
+  resolution: 0.1464 
+
+  # Num timesteps into the future to predict
+  fwd_tsteps: 10
+
+  # Initial betas depending on model
+  beta_adaptive: [0.1, 0.3, 1.0, 3.0, 10.0]
+  beta_rational: [0.05]
+  beta_irrational: [10.0]
+
+  # Car's height (in meters)
+  car_height: 1
+
+  # Car's driving speed (m/s) 
+  car_vel: 9 
+
+  # Probability threshold 
+  prob_thresh: 0.01
+
+  # Process noise (epsilon-stubborn model)
+  epsilon_dest: 0.02
+  epsilon_beta: 0.02
+
+sim:
+  # Specify the robot prefixes to listen to (obstacles)
+  robot_prefixes: ["HY4", "HY5"]
+
+  # Timestep 
+  dt: 0.01
+
+  # Potential field goal parameters
+  #   alpha  -- attraction amount
+  #   goal_s -- potential field spread (m)
+  #   goal_r -- goal radius (m)
+  alpha_pot_field: 0.5
+  goal_s: 1
+  goal_r: 0.5
+
+  # Potential field obstacle parameters
+  #   beta  -- obstacle's repulsion amount
+  #   obstacle_s -- potential field spread (m)
+  #   obstacle_r -- obstacle radius (m)
+  beta_pot_field: 1.0
+  obstacle_s: 1
+  obstacle_r: 0.25
+
+
+

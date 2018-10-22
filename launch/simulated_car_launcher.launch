@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<launch>
+
+	<rosparam command="load" file="$(find crazyflie_human)/config/car_pred.yaml" />
+
+	<!-- Preidction model: irrational, rational, adaptive.	-->
+	<arg name="beta" default="adaptive" /> 
+	<param name="beta" value="$(arg beta)" />
+
+	<!-- Simulate human walking around. -->
+	<node name="simulate_dubins_car" pkg="crazyflie_human" type="dubins_car.py" output="screen"/>
+
+	<!-- Predict each human. 
+	<node name="human_prediction$(arg human_number)" pkg="crazyflie_human" type="human_pred.py" output="screen"/> -->
+
+</launch>
