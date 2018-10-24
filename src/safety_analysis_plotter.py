@@ -5,8 +5,12 @@ import sys, select, os
 import numpy as np
 import time
 import pickle
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.colors as colors
+import matplotlib.cm as cmx
+import colormaps as cmaps
 
 from std_msgs.msg import String, Float32, ColorRGBA
 from nav_msgs.msg import OccupancyGrid
@@ -108,15 +112,15 @@ class SafetyAnalysisPlotter(object):
 		self.real_upper = up
 
 		# (real-world) start and goal locations 
-		self.real_start = rospy.get_param("pred/human"+self.human_number+"_real_start")
-		self.real_goals = rospy.get_param("pred/human"+self.human_number+"_real_goals")
+		self.real_start = rospy.get_param("pred/human_real_start")
+		self.real_goals = rospy.get_param("pred/human_real_goals")
 
 		# (simulation) start and goal locations
 		self.sim_start = self.real_to_sim_coord(self.real_start)
 		self.sim_goals = [self.real_to_sim_coord(g) for g in self.real_goals]
 
 		# color to use to represent this human
-		self.color = rospy.get_param("pred/human"+self.human_number+"_color")
+		self.color = rospy.get_param("pred/human_color")
 
 		# tracks the human's state over time
 		self.real_human_traj = None
@@ -151,7 +155,6 @@ class SafetyAnalysisPlotter(object):
 		curr_time = rospy.Time.now()
 		xypose = self.make_valid_state([msg.pose.position.x, msg.pose.position.y])
 
-		# if this is the first human state message, grab the timestamp
 		if self.first_human_msg_time is None:
 			self.first_human_msg_time = curr_time
 
@@ -175,12 +178,11 @@ class SafetyAnalysisPlotter(object):
 			# ------- SAFETY ANALYSIS PLOTTING ------- #
 
 			elapsed_time = (curr_time - self.first_human_msg_time).to_sec() 
-			print "elapsed_time: ", elapsed_time
+			print "elapsed time: ", elapsed_time
 			if np.abs(elapsed_time - self.real_plot_time) < 0.25: #elapsed_time >= self.real_plot_time:
 				print "starting safety analysis..."
 				self.plot_safety_analysis()
-				print "finished safety analysis. exiting..."
-				rospy.signal_shutdown()
+				rospy.signal_shutdown("finished safety analysis. exiting...")
 
 			# ------- SAFETY ANALYSIS PLOTTING ------- #
 
@@ -188,6 +190,9 @@ class SafetyAnalysisPlotter(object):
 			if self.prev_pos is not None:
 				self.human_vel = np.linalg.norm((np.array(xypose) - np.array(self.prev_pos)))/time_diff
 				self.deltat = np.minimum(np.maximum(self.res/self.human_vel,0.05),0.2)
+				#self.deltat = np.minimum(np.maximum(self.res/self.human_vel,0.05), self.res/0.5)
+				print "vel: ", self.human_vel
+				print "dt: ", self.deltat
 
 			self.prev_pos = xypose	
 
@@ -200,15 +205,15 @@ class SafetyAnalysisPlotter(object):
 		# infer the new human occupancy map from the current state
 		(irr_occugrids, _, _) = self.infer_occupancies(self.irr_betas)
 		(rat_occugrids, _, _) = self.infer_occupancies(self.rat_betas)
-		(adapt_occugrids, _, _) = self.infer_occupancies(self.adapt_betas)
+		(adapt_occugrids, _, beta_prob) = self.infer_occupancies(self.adapt_betas)
 
         # keep track of a matplotlib figure for rendering
 		fig = plt.figure()
 
 		# 1,1,1, = num rows, num cols, idx
 		ax = fig.add_subplot(1,1,1, aspect="equal")
-		ax.set_xlim(self.real_lower[0], self.real_upper[0])
-		ax.set_ylim(self.real_lower[1], self.real_upper[1])
+		ax.set_xlim(self.real_lower[0]-self.res, self.real_upper[0]+self.res)
+		ax.set_ylim(self.real_lower[1]-self.res, self.real_upper[1]+self.res)
 		plt.hold(True)
 		plt.rc('text', usetex=True)
 		plt.rc('font', family='serif')
@@ -218,20 +223,45 @@ class SafetyAnalysisPlotter(object):
 		g = 45.0/255.0
 		b = 71.0/255.0
 
+		# get the colormap
+		plt.register_cmap(name='viridis', cmap=cmaps.viridis)
+		plt.set_cmap(cmaps.viridis)
+		colormap = plt.cm.get_cmap('viridis')
+
+		#cmap_name = 'greenish_map'
+		#(30./255., 56./255., 78./255.), (23./255.,125./255.,123./225.), (196./255., 222./255., 118./255.)
+		#(105./255., 0, 150./255.)
+		#green_colors = [(0., 105./255., 226/255.), (114./255., 214./255., 0./255.)]
+		#green_colors = [(12./255., 0./255., 150./255.), (0./255., 237./255., 225./255.), (0./255., 150./255., 50./255.)]
+		#n_bins = 10  # Discretizes the interpolation into bins
+		#colormap = colors.LinearSegmentedColormap.from_list(cmap_name, green_colors, N=n_bins)
+		cNorm = colors.Normalize(vmin=np.log(0.05),vmax=np.log(10))
+		scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=colormap)
+		
 		# get the last human state and plot the human
 		human_position = self.real_human_traj[-1:]
 		human_x = human_position[0][0]
 		human_y = human_position[0][1]
 
 		# plot the forward reachable set
-		self.human_vel = 0.7 			# TODO THIS IS HARDCODED!
-		radius = self.human_vel*self.pred_plot_time
-		print "fwd reach set radius: ", radius
-		fwd_reach_patch = patches.Circle((human_x, human_y), radius, fill=None, linewidth=3.0, linestyle='dashed', edgecolor=[r,g,b], alpha=1)
+		vel = self.res*np.sqrt(2)/self.deltat
+		radius = vel*self.pred_plot_time
+		fwd_reach_patch = patches.Circle((human_x, human_y), radius, fill=None, linewidth=2.0, linestyle='dashed', edgecolor=[r,g,b], alpha=1)
 		ax.add_patch(fwd_reach_patch)
 
-		# plot IRRATIONAL predictions
+		def reverse_log_beta(beta):
+			max_beta = 10.0
+			min_beta = 0.05
+			return np.log(max_beta) - (np.log(beta) - np.log(min_beta))
+
+		# ----- plot IRRATIONAL predictions ----- #
 		irrgrid = self.interpolate_grid(irr_occugrids, self.pred_plot_time)
+		irr_beta = 0.05
+		irr_color = scalarMap.to_rgba(reverse_log_beta(irr_beta))
+		diff = irr_color- np.array([.2,.2,.2,0])
+		dark_irr_color  = np.clip(diff, 0, 1)
+		print "irr color: ", irr_color
+		print "dark: ", dark_irr_color
 
 		for i in range(len(irrgrid)):
 			(row, col) = self.state_to_coor(i)
@@ -240,11 +270,19 @@ class SafetyAnalysisPlotter(object):
 			if irrgrid[i] >= self.prob_thresh:
 				bottom_left = [real_coord[0]-self.res/2.0, real_coord[1]-self.res/2.0]
 				#grid_patch1 = patches.Rectangle(bottom_left, self.res, self.res, alpha=1, fill=None, edgecolor=[r,g,b])
-				grid_patch1 = patches.Rectangle(bottom_left, self.res, self.res, alpha=0.5, linewidth=0.0, facecolor=[196./255., 222./255., 118./255.])
+				grid_patch1 = patches.Rectangle(bottom_left, self.res, self.res, alpha=0.7, linewidth=0.5, edgecolor=dark_irr_color, facecolor=irr_color) #facecolor=[196./255., 222./255., 118./255.])
 				ax.add_patch(grid_patch1)
-		
-		# plot ADAPTIVE predictions
+		# --------------------------------------- #
+
+		# ----- plot ADAPTIVE predictions ----- #
 		adaptgrid = self.interpolate_grid(adapt_occugrids, self.pred_plot_time)
+		avg_beta = 0.0
+		for (ii,b) in enumerate(self.adapt_betas):
+			avg_beta += b*beta_prob[0][ii]
+		print "avg beta: ", avg_beta
+		adapt_color = scalarMap.to_rgba(reverse_log_beta(avg_beta))
+		diff = adapt_color- np.array([.1,.1,.1,0])
+		dark_adapt_color = np.clip(diff, 0, 1)
 
 		for i in range(len(adaptgrid)):
 			(row, col) = self.state_to_coor(i)
@@ -253,11 +291,16 @@ class SafetyAnalysisPlotter(object):
 			if adaptgrid[i] >= self.prob_thresh:
 				bottom_left = [real_coord[0]-self.res/2.0, real_coord[1]-self.res/2.0]
 				#grid_patch2 = patches.Rectangle(bottom_left, self.res, self.res, alpha=0.4, linewidth=0.0, facecolor=[r,g,b])
-				grid_patch2 = patches.Rectangle(bottom_left, self.res, self.res, alpha=0.5, linewidth=0.0, facecolor=[23./255.,125./255.,123./225.])
+				grid_patch2 = patches.Rectangle(bottom_left, self.res, self.res, alpha=0.7, linewidth=0.5, edgecolor=dark_adapt_color, facecolor=adapt_color) #facecolor=[23./255.,125./255.,123./225.])
 				ax.add_patch(grid_patch2)
+		# --------------------------------------- #
 		
-		# plot RATIONAL predictions
+		# ----- plot RATIONAL predictions ----- #
 		ratgrid = self.interpolate_grid(rat_occugrids, self.pred_plot_time)
+		rat_beta = 10.0
+		rat_color = scalarMap.to_rgba(reverse_log_beta(rat_beta))
+		diff = rat_color- np.array([.1,.1,.1,0])
+		dark_rat_color  = np.clip(diff, 0, 1)
 
 		for i in range(len(ratgrid)):
 			(row, col) = self.state_to_coor(i)
@@ -266,12 +309,18 @@ class SafetyAnalysisPlotter(object):
 			if ratgrid[i] >= self.prob_thresh:
 				bottom_left = [real_coord[0]-self.res/2.0, real_coord[1]-self.res/2.0]
 				#grid_patch3 = patches.Rectangle(bottom_left, self.res, self.res, alpha=1.0, fill=None, edgecolor=[r,g,b], hatch="///")
-				grid_patch3 = patches.Rectangle(bottom_left, self.res, self.res, alpha=0.6, linewidth=0.0, facecolor=[30./255., 56./255., 78./255.])
+				grid_patch3 = patches.Rectangle(bottom_left, self.res, self.res, alpha=0.7, linewidth=0.5, edgecolor=dark_rat_color, facecolor=rat_color) #facecolor=[30./255., 56./255., 78./255.])
 				ax.add_patch(grid_patch3)
+		# --------------------------------------- #
 
 		# plot the human
 		human_patch = patches.Circle((human_x, human_y), self.res/2.0, color="k")
 		ax.add_patch(human_patch)
+
+		# plot the goal
+		goal = self.real_goals[0]
+		goal_patch = patches.Circle((goal[0], goal[1]), self.res/2.0, color="r")
+		ax.add_patch(goal_patch)
 
 		# plot legend
 		#leg = ax.legend((fwd_reach_patch, grid_patch1, grid_patch3, grid_patch2), (r"FRS", r"$\beta$ low", r"$\beta$ high", r"$\beta$ infer"), prop={'size': 20}, loc="center right")
@@ -289,6 +338,7 @@ class SafetyAnalysisPlotter(object):
 		#plt.axis('off')
 		plt.xticks([])
 		plt.yticks([])
+		ax.axis('off')
 		#plt.show()
 		#plt.pause(0.1)
 
@@ -296,7 +346,7 @@ class SafetyAnalysisPlotter(object):
 		path = "/home/abajcsy/GitHub/human_estimator/src/crazyflie_human/imgs/"
 		filename = path + "comp_r" + str(self.real_plot_time) + "p" + str(self.pred_plot_time) + ".png"
 		print "saving image ", filename
-		plt.savefig(filename)
+		plt.savefig(filename, bbox_inches='tight')
 
 	def prob_to_color(self, time, prob):
 		"""
@@ -455,6 +505,7 @@ class SafetyAnalysisPlotter(object):
 			return interpolated_grid
 
 if __name__ == '__main__':
-	real_plot_time = 0 	# plot the analysis after 1 second of world evolving  
-	pred_plot_time = 2 	# compute forward reachable set for 1 second in the future
+	print "Starting safety analysis predictor!"
+	real_plot_time = 14 	# plot the analysis after this many seconds of world evolving  
+	pred_plot_time = 2 	# compute forward reachable set for this many seconds in the future
 	plotter = SafetyAnalysisPlotter(real_plot_time, pred_plot_time)

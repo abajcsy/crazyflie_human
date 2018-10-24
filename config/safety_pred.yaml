@@ -7,11 +7,11 @@ state:
 pred:
 
   # Start position of human(s) and list of potential goal locations
-  human1_real_start: [1.63, 0.46] 
-  human1_real_goals: [[-1.44, 0.44]] 
+  human_real_start: [1.61,-1.02] #[1.63, 0.46] 
+  human_real_goals: [[-0.17, 2.60]] #[[-1.44, 0.44]] 
 
   # color coding for human visualization (RGB)
-  human1_color: [1.0, 0.0, 0.0]
+  human_color: [1.0, 0.0, 0.0]
 
   # Dimensions of the prediction map
   sim_height: 26

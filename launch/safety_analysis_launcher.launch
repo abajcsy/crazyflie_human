@@ -8,14 +8,10 @@
 	<arg name="human_number" default="1" />
 	<param name="human_number" value="$(arg human_number)" />
 
-	<!-- Preidction model: irrational, rational, adaptive.	-->
-	<arg name="beta" default="adaptive" /> 
-	<param name="beta" value="$(arg beta)" />
-
-	<!-- Simulate human walking around. -->
-	<node name="simulate_human$(arg human_number)" pkg="crazyflie_human" type="linear_human.py" output="screen"/>
-
-	<!-- Predict each human. -->
+	<!-- Predict human with three models and compare with forward reach set. -->
 	<node name="safety_analysis_plotter" pkg="crazyflie_human" type="safety_analysis_plotter.py" output="screen" required="true"/> 
 
+	<!-- Read data from optitrack of human walking around. -->
+	<node name="human_state_estimator" pkg="crazyflie_human" type="human_state_estimator.py" output="screen"/> 
 </launch>
+

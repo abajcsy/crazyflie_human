@@ -18,7 +18,7 @@ if __name__ == '__main__':
 	rate = rospy.Rate(100.0)
 	while not rospy.is_shutdown():
 		try:
-			hat_tf = '/Human'+human_num+'/base_link'
+			hat_tf = '/vicon/hat/hat'#'/Human'+human_num+'/base_link'
 			(trans,rot) = listener.lookupTransform('/world', hat_tf, rospy.Time(0))
 		except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
 			continue
