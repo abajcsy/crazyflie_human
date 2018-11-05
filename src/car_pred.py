@@ -422,26 +422,46 @@ class CarPrediction(object):
 				# TODO: SUM OVER ALL THETAS WHEN VISUALIZING THE PROBABILITY 
 				# 		FOR A PARTICULAR (x,y)
 				if grid is not None:
-					for i in range(len(grid)):
-						real_coord = self.gridworld.state_to_real(i)
+					grid_3D = self.convert_occugrid_1Dto3D(grid)
+					for x in range(self.sim_height):
+						for y in range(self.sim_width):
 
-						color = ColorRGBA()
-						color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*grid[i])
-						color.r = np.sqrt(grid[i])
-						color.g = np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0
-						color.b = 0.9*np.minimum(np.absolute(np.log(grid[i])),5.0)/5.0 + 0.5*np.sqrt(grid[i])
-						if grid[i] < self.prob_thresh:
-							color.a = 0.0
-						marker.colors.append(color)
+							# sum over all theta's to get P(x,y)
+							probability = np.sum(grid_3D[x,y,:])
 
-						pt = Vector3()
-						pt.x = real_coord[0]
-						pt.y = real_coord[1]
-						pt.z = self.car_height/2.0
-						marker.points.append(pt)
+							# get the real-world coordinate
+							real_coord = self.gridworld.coor_to_real(x,y,0)
+
+							color = ColorRGBA()
+							color.a = np.sqrt((1 - (time-1)/self.fwd_tsteps)*probability)
+							color.r = np.sqrt(probability)
+							color.g = np.minimum(np.absolute(np.log(probability)),5.0)/5.0
+							color.b = 0.9*np.minimum(np.absolute(np.log(probability)),5.0)/5.0 + 0.5*np.sqrt(probability)
+							if probability < self.prob_thresh:
+								color.a = 0.0
+							marker.colors.append(color)
+
+							pt = Vector3()
+							pt.x = real_coord[0]
+							pt.y = real_coord[1]
+							pt.z = self.car_height/2.0
+							marker.points.append(pt)
 					
 			self.grid_vis_pub.publish(marker)
 			
+	def convert_occugrid_1Dto3D(self, occugrid):
+		"""
+		Given flattened 1D occupancy grid at a particular time, return the
+		3D occupancy grid.
+		"""
+		occugrid_3D = np.zeros((self.sim_height, self.sim_width, self.sim_theta))
+
+		for i in range(len(occugrid)):
+			(x,y,theta) = self.gridworld.state_to_coor(i)
+			occugrid_3D[x][y][theta] = occugrid[i]
+
+		return occugrid_3D
+
 	# ---- ROS Message Conversion ---- #
 
 	# TODO: THIS IS WRONG. NEED TO MODIFY THE OCCUPANCY GRID TIME MESSAGE
