@@ -1,24 +1,24 @@
 state:
 
-  # Upper and lower bounds for experimental space (meters). [x, y, z]
-  lower: [-2.0, -1.04, 0] 
-  upper: [1.66, 2.62, 2.0] 
+  # Upper and lower bounds for experimental space (meters, meters, radians). [x, y, theta]
+  lower: [0.0, 0.0, 0] 
+  upper: [20, 20, 6.28318531]
 
 pred:
+  # Total number of cars that you will be simulating. 
+  total_number_of_cars: 1
 
-  # Start position of human(s) and list of potential goal locations
-  car_real_start: [1.63, 0.46, 0.0] 
-  car_real_goals: [[0.0, 0.0, 1.57079633], [-1.44, 0.44, 0.0]] 
+  # Start position of cars(s) and list of potential goal locations
+  car1_real_start: [11.5, 1.5, 1.57079633] 
+  car1_real_goals: [[11.5, 18.5, 1.57079633]] 
 
-  # color coding for human visualization (RGB)
-  car_color: [1.0, 0.0, 0.0]
+  # color coding for car visualization (RGB)
+  car1_color: [1.0, 0.0, 0.0]
 
   # Dimensions of the prediction map
-  sim_height: 26
-  sim_width: 26
-
-  # Resolution, ex. (real meters)/(sim dim-1) (m/cell)
-  resolution: 0.1464 
+  sim_height: 26  # (num x states)
+  sim_width: 26   # (num y states)
+  sim_theta: 7    # (num theta states)
 
   # Num timesteps into the future to predict
   fwd_tsteps: 10
@@ -29,10 +29,10 @@ pred:
   beta_irrational: [10.0]
 
   # Car's height (in meters)
-  car_height: 1
+  car_height: 1.5
 
   # Car's driving speed (m/s) 
-  car_vel: 9 
+  car_vel: 1 
 
   # Probability threshold 
   prob_thresh: 0.01
