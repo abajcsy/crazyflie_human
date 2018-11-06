@@ -16,8 +16,8 @@ pred:
   car1_color: [1.0, 0.0, 0.0]
 
   # Dimensions of the prediction map
-  sim_height: 26  # (num x states)
-  sim_width: 26   # (num y states)
+  sim_height: 20  # (num x states)
+  sim_width: 20   # (num y states)
   sim_theta: 7    # (num theta states)
 
   # Num timesteps into the future to predict

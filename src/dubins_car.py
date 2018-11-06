@@ -151,6 +151,7 @@ class DubinsCar(object):
 		else:	 
 			# get the next target position along the trajectory
 			self.curr_state = self.interpolate(curr_time)
+			#print "curr state: ", self.curr_state
 
 		# create message to carry next state
 		self.car_pose = PoseStamped()
@@ -161,16 +162,38 @@ class DubinsCar(object):
 		self.car_pose.pose.position.z = 0.0
 		self.car_pose.pose.orientation = Quaternion(*tf_conversions.transformations.quaternion_from_euler(0,0,self.curr_state[2]))
 
-
 	def interpolate(self, curr_time):
 		"""
 		Get the current position of the car 
 		"""
 
 		if self.example == "accurate":
+			# drive straight towards goal
 			return self.dynamics(0.0)
-		#elif self.example is "obstacle":
-		#elif self.example is "goal":
+		elif self.example == "obstacle":
+			# swerve around a pothole on side of road
+			if curr_time >= 0.0 and curr_time < 2.0:
+				return self.dynamics(0.0)
+			elif curr_time >= 2.0 and curr_time < 4.0:
+				# turn left
+				return self.dynamics(0.5)
+			elif curr_time >= 4.0 and curr_time < 6.0:
+				# turn right
+				return self.dynamics(-0.5)
+			elif curr_time >= 6.0 and curr_time < 8.0:
+				return self.dynamics(-0.5)
+			elif curr_time >= 8.0 and curr_time < 10.0:
+				return self.dynamics(0.5)
+			else:
+				return self.dynamics(0.0)
+		elif self.example == "goal":
+			# take a turn off the road
+			if curr_time >= 0.0 and curr_time < 6.0:
+				return self.dynamics(0.0)
+			elif curr_time >= 6.0 and curr_time < 9.0:
+				return self.dynamics(-0.5)
+			else:
+				return self.dynamics(0.0)
 
 	def dynamics(self, u):
 		"""

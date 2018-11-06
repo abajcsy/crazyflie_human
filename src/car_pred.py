@@ -145,17 +145,19 @@ class CarPrediction(object):
 		self.gridworld = CarMDP(self.sim_height, self.sim_width, self.sim_theta, self.real_goals, 
 			self.real_lower, dt=self.deltat, vel=self.car_vel, res=self.res, allow_wait=True, obstacle_list=None)
 
-
 		# (simulation) start and goal locations
 		self.sim_start = self.gridworld.real_to_coor(self.real_start[0], self.real_start[1], self.real_start[2])
 		self.sim_goals = [self.gridworld.real_to_coor(x,y,t) for (x,y,t) in self.real_goals]
 
 		# TODO This is for debugging.
 		print "----- Running prediction for one dubins car : -----"
-		print "	- car: ", self.car_number
+		print "	- car num: ", self.car_number
+		print "	- car vel: ", self.car_vel
 		print "	- beta model: ", self.beta_model
 		print "	- prob thresh: ", self.prob_thresh
-		print "----------------------------------------------"
+		print "	- delta t: ", self.deltat
+		print "	- resolution: ", self.res
+		print "---------------------------------------------------"
 
 	#TODO THESE TOPICS SHOULD BE FROM THE YAML/LAUNCH FILE
 	def register_callbacks(self):
@@ -216,12 +218,7 @@ class CarPrediction(object):
 			# publish occupancy grid list
 			if self.occupancy_grids is not None:
 				self.occu_pub.publish(self.grid_to_message())
-				self.visualize_occugrid(3)
-
-			# adjust the deltat based on the observed measurements
-			if self.prev_pos is not None:
-				self.car_vel = np.linalg.norm((np.array(xythetapose) - np.array(self.prev_pos)))/time_diff
-				self.deltat = np.minimum(np.maximum(self.res/self.car_vel,0.05),0.2)
+				self.visualize_occugrid(4)
 
 			self.prev_pos = xythetapose	
 			
@@ -278,6 +275,8 @@ class CarPrediction(object):
 
   		action = self.gridworld.real_to_action(real_prev, real_next)
   		state = self.gridworld.real_to_state(real_prev[0], real_prev[1], real_prev[2])
+
+  		print "s,a: ", (state, action)
 
 		# The line below feeds in the last car (s,a) pair and previous posterior
 		# and does a recursive Bayesian update.
