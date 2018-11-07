@@ -53,11 +53,24 @@ class CarPrediction(object):
 			m.id = id
 			id += 1
 
+		# make marker array for all obstacles
+		obstacle_marker_array = MarkerArray()
+		for box in self.real_obstacles:
+			marker = self.box_to_marker(box[0], box[1])
+			obstacle_marker_array.markers.append(marker)
+
+		# Re-number the marker IDs
+		id = 0
+		for m in obstacle_marker_array.markers:
+			m.id = id
+			id += 1
+
 		rate = rospy.Rate(100) 
 
 		while not rospy.is_shutdown():
 			# plot start/goal markers for visualization
 			self.goal_pub.publish(marker_array)
+			self.obstacle_pub.publish(obstacle_marker_array)
 
 			rate.sleep()
 
@@ -115,9 +128,16 @@ class CarPrediction(object):
 		self.real_lower = low
 		self.real_upper = up
 
+		# are we simulating the accurate example, unmodeled goal, or 
+		# unmodeled obstacle?
+		self.example = rospy.get_param("example")
+
 		# (real-world) start and goal locations 
-		self.real_start = rospy.get_param("pred/car"+self.car_number+"_real_start")
-		self.real_goals = rospy.get_param("pred/car"+self.car_number+"_real_goals")
+		self.real_start = rospy.get_param("pred/car"+self.car_number+"_real_start_"+self.example)
+		self.real_goals = rospy.get_param("pred/car"+self.car_number+"_real_goals_"+self.example)
+
+		# get list of obstacles
+		self.real_obstacles = rospy.get_param("pred/car"+self.car_number+"_real_obstacles_"+self.example)
 
 		# color to use to represent this car
 		self.color = rospy.get_param("pred/car"+self.car_number+"_color")
@@ -141,9 +161,14 @@ class CarPrediction(object):
 
 		# --- gridworld creation --- #
 
+		# TODO: I HAVEN'T TESTED OBSTACLE_LIST NOT BEING NONE YET.
+
+		# compute velocity in cells/timestep
+		# vel_gridworld = self.car_vel*(1/self.res)*self.deltat
+
 		# grid world representing the experimental environment
 		self.gridworld = CarMDP(self.sim_height, self.sim_width, self.sim_theta, self.real_goals, 
-			self.real_lower, dt=self.deltat, vel=self.car_vel, res=self.res, allow_wait=True, obstacle_list=None)
+			self.real_lower, dt=self.deltat, vel=self.car_vel, res=self.res, allow_wait=True, obstacle_list=self.real_obstacles)
 
 		# (simulation) start and goal locations
 		self.sim_start = self.gridworld.real_to_coor(self.real_start[0], self.real_start[1], self.real_start[2])
@@ -176,6 +201,7 @@ class CarPrediction(object):
 		self.goal_pub = rospy.Publisher('/goal_markers'+self.car_number, MarkerArray, queue_size=10)
 		self.grid_vis_pub = rospy.Publisher('/occu_grid_marker'+self.car_number, 
 			Marker, queue_size=10)
+		self.obstacle_pub = rospy.Publisher('/obstacle_markers'+self.car_number, MarkerArray, queue_size=10)
 		#self.car_marker_pub = rospy.Publisher('/car_marker'+self.car_number, 
 		#	Marker, queue_size=10)
 
@@ -527,6 +553,33 @@ class CarPrediction(object):
 		marker.pose.position.y = xytheta[1]
 		marker.pose.orientation = Quaternion(*tf_conversions.transformations.quaternion_from_euler(0,0,xytheta[2]))
 
+		return marker
+
+	def box_to_marker(self, xylow, xyupp):
+		"""
+		Converts lowerxy and upperxy definition of box into 3D marker.
+		"""
+		xlen = xyupp[0] - xylow[0]
+		ylen = xyupp[1] - xylow[1] 
+
+		marker = Marker()
+		marker.header.frame_id = "/world"
+		marker.header.stamp = rospy.Time().now()
+
+		marker.type = marker.CUBE
+		marker.action = marker.ADD
+		marker.pose.orientation.w = 1
+		marker.pose.position.z = 0
+		marker.scale.x = xlen
+		marker.scale.y = ylen
+		marker.scale.z = self.res
+		marker.color.a = 0.5
+		marker.color.r = 0.0
+		marker.color.g = 0.0
+		marker.color.b = 0.0
+
+		marker.pose.position.x = xylow[0] + xlen/2.0
+		marker.pose.position.y = xylow[1] + ylen/2.0
 		return marker
 
 	def pose_to_marker(self, xypose, color=[1.0,0.0,0.0]):

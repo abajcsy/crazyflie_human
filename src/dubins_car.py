@@ -31,9 +31,14 @@ class DubinsCar(object):
 			t_since_start = rospy.Time.now().secs - self.start_T
 			curr_t = rospy.Time.now()
 			time_diff = (curr_t - self.prev_t).to_sec()
+
+			# induce fake time dilation to make predictions catch up!
+			TIME_DILATION = 1.0
+			time_diff = time_diff/TIME_DILATION
+
 			# only use measurements of the car every deltat timesteps
 			if time_diff >= self.deltat:
-				self.update_pose(t_since_start)
+				self.update_pose(t_since_start/TIME_DILATION)
 				self.prev_t += rospy.Duration.from_sec(self.deltat) 
 			
 			if self.car_pose is not None:
@@ -66,8 +71,12 @@ class DubinsCar(object):
 		self.real_upper = up
 
 		# (real-world) start and goal locations 
-		self.real_start = rospy.get_param("pred/car"+self.car_number+"_real_start")
-		self.real_goals = rospy.get_param("pred/car"+self.car_number+"_real_goals")
+		self.real_start = rospy.get_param("pred/car"+self.car_number+"_real_start_"+self.example)
+		self.real_goals = rospy.get_param("pred/car"+self.car_number+"_real_goals_"+self.example)
+		if self.example == "goal":
+			# if the example is to simulate going to an unmodeled goal, 
+			# set the unmodeled goal here (so prediction is unaware)
+			self.real_goals = [[1.0, 11.5, 3.1415927]]
 		self.car_height = rospy.get_param("pred/car_height")
 
 		# color to use to represent this car
@@ -167,6 +176,8 @@ class DubinsCar(object):
 		Get the current position of the car 
 		"""
 
+		u = 0.5
+
 		if self.example == "accurate":
 			# drive straight towards goal
 			return self.dynamics(0.0)
@@ -176,14 +187,14 @@ class DubinsCar(object):
 				return self.dynamics(0.0)
 			elif curr_time >= 2.0 and curr_time < 4.0:
 				# turn left
-				return self.dynamics(0.5)
+				return self.dynamics(u)
 			elif curr_time >= 4.0 and curr_time < 6.0:
 				# turn right
-				return self.dynamics(-0.5)
+				return self.dynamics(-u)
 			elif curr_time >= 6.0 and curr_time < 8.0:
-				return self.dynamics(-0.5)
+				return self.dynamics(-u)
 			elif curr_time >= 8.0 and curr_time < 10.0:
-				return self.dynamics(0.5)
+				return self.dynamics(u)
 			else:
 				return self.dynamics(0.0)
 		elif self.example == "goal":
@@ -191,7 +202,7 @@ class DubinsCar(object):
 			if curr_time >= 0.0 and curr_time < 6.0:
 				return self.dynamics(0.0)
 			elif curr_time >= 6.0 and curr_time < 9.0:
-				return self.dynamics(-0.5)
+				return self.dynamics(-u)
 			else:
 				return self.dynamics(0.0)
 

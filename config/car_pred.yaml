@@ -9,8 +9,22 @@ pred:
   total_number_of_cars: 1
 
   # Start position of cars(s) and list of potential goal locations
-  car1_real_start: [11.5, 1.5, 1.57079633] 
-  car1_real_goals: [[11.5, 18.5, 1.57079633]] 
+
+  # -- "Accurate" Example (going straight at a T-intersection) -- #
+  car1_real_start_accurate: [11.5, 1, 1.57079633] 
+  car1_real_goals_accurate: [[11.5, 19, 1.57079633], [1.0, 11.5, 3.1415927]] 
+  # List of obstacles defined by [lower[x][y], upper[x][y]]
+  car1_real_obstacles_accurate: [ [[13.0,0.0],[20.0,20.0]], [[0.0,13.0], [7.0,20.0]], [[0.0,0.0], [10.0,10.0]] ] 
+
+  # -- "Unmodeled goal" Example (going on a dirt road off the side of the highway) -- #
+  car1_real_start_goal: [11.5, 1, 1.57079633] 
+  car1_real_goals_goal: [[11.5, 19, 1.57079633]] # true goal: [1.0, 11.5, 3.1415927]
+  car1_real_obstacles_goal: [ [[13.0,0.0],[20.0,7.0]], [[13.0,13.0], [20.0,20.0]], [[0.0,0.0], [7.0,20.0]] ] 
+
+  # -- "Unmodeled obstacle" Example (going around a pothole on the road) -- #
+  car1_real_start_obstacle: [11.5, 1, 1.57079633] 
+  car1_real_goals_obstacle: [[11.5, 19, 1.57079633]]
+  car1_real_obstacles_obstacle: [ [[13.0,0.0],[20.0,20.0]], [[0.0,0.0], [7.0,20.0]] ] 
 
   # color coding for car visualization (RGB)
   car1_color: [1.0, 0.0, 0.0]
@@ -18,7 +32,7 @@ pred:
   # Dimensions of the prediction map
   sim_height: 20  # (num x states)
   sim_width: 20   # (num y states)
-  sim_theta: 7    # (num theta states)
+  sim_theta: 12   # (num theta states)
 
   # Num timesteps into the future to predict
   fwd_tsteps: 10
@@ -32,7 +46,7 @@ pred:
   car_height: 1.5
 
   # Car's driving speed (m/s) 
-  car_vel: 1 
+  car_vel: 1
 
   # Probability threshold 
   prob_thresh: 0.01
@@ -40,29 +54,3 @@ pred:
   # Process noise (epsilon-stubborn model)
   epsilon_dest: 0.02
   epsilon_beta: 0.02
-
-sim:
-  # Specify the robot prefixes to listen to (obstacles)
-  robot_prefixes: ["HY4", "HY5"]
-
-  # Timestep 
-  dt: 0.01
-
-  # Potential field goal parameters
-  #   alpha  -- attraction amount
-  #   goal_s -- potential field spread (m)
-  #   goal_r -- goal radius (m)
-  alpha_pot_field: 0.5
-  goal_s: 1
-  goal_r: 0.5
-
-  # Potential field obstacle parameters
-  #   beta  -- obstacle's repulsion amount
-  #   obstacle_s -- potential field spread (m)
-  #   obstacle_r -- obstacle radius (m)
-  beta_pot_field: 1.0
-  obstacle_s: 1
-  obstacle_r: 0.25
-
-
-
