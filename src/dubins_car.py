@@ -34,10 +34,9 @@ class DubinsCar(object):
 			t_since_start = (curr_t - self.start_T).to_sec()
 			time_diff = (curr_t - self.prev_t).to_sec()
 
-			# only use measurements of the car every deltat timesteps
-			if time_diff >= self.dt:
-				self.update_pose(t_since_start)
-				self.prev_t = curr_t
+			# update the position of the car based on the current time
+			self.update_pose(t_since_start, time_diff)
+			self.prev_t = curr_t
 			
 			if self.car_pose is not None:
 				self.state_pub.publish(self.car_pose)
@@ -146,7 +145,7 @@ class DubinsCar(object):
 
 		return marker
 
-	def update_pose(self, curr_time):
+	def update_pose(self, curr_time, elapsed_time):
 		"""
 		Gets the next desired position along trajectory
 		by interpolating between waypoints given the current t.
@@ -163,7 +162,7 @@ class DubinsCar(object):
 			 self.curr_state = self.real_goals[0]
 		else:	 
 			# get the next target position along the trajectory
-			self.curr_state = self.interpolate(curr_time)
+			self.curr_state = self.interpolate(curr_time, elapsed_time)
 			#print "curr state: ", self.curr_state
 
 		# create message to carry next state
@@ -175,7 +174,7 @@ class DubinsCar(object):
 		self.car_pose.pose.position.z = 0.0
 		self.car_pose.pose.orientation = Quaternion(*tf_conversions.transformations.quaternion_from_euler(0,0,self.curr_state[2]))
 
-	def interpolate(self, curr_time):
+	def interpolate(self, curr_time, elapsed_time):
 		"""
 		Get the current position of the car 
 		"""
@@ -184,32 +183,32 @@ class DubinsCar(object):
 
 		if self.example == "accurate":
 			# drive straight towards goal
-			return self.dynamics(0.0)
+			return self.dynamics(0.0, elapsed_time)
 		elif self.example == "obstacle":
 			# swerve around a pothole on side of road
 			if curr_time >= 0.0 and curr_time < 4.0:
-				return self.dynamics(0.0)
+				return self.dynamics(0.0, elapsed_time)
 			elif curr_time >= 4.0 and curr_time < 5.5:
 				# turn left
-				return self.dynamics(u)
+				return self.dynamics(u, elapsed_time)
 			elif curr_time >= 5.5 and curr_time < 8.5:
 				# turn right
-				return self.dynamics(-u)
+				return self.dynamics(-u, elapsed_time)
 			elif curr_time >= 8.5 and curr_time < 10.0:
 				# turn left
-				return self.dynamics(u)
+				return self.dynamics(u, elapsed_time)
 			else:
-				return self.dynamics(0.0)
+				return self.dynamics(0.0, elapsed_time)
 		elif self.example == "goal":
 			# take a turn off the road
 			if curr_time >= 0.0 and curr_time < 7.0:
-				return self.dynamics(0.0)
+				return self.dynamics(0.0, elapsed_time)
 			elif curr_time >= 7.0 and curr_time < 9.5:
-				return self.dynamics(-u)
+				return self.dynamics(-u, elapsed_time)
 			else:
-				return self.dynamics(0.0)
+				return self.dynamics(0.0, elapsed_time)
 
-	def dynamics(self, u):
+	def dynamics(self, u, elapsed_time):
 		"""
 		Pushes a control input through the dynamics and returns
 		the next state.
@@ -220,14 +219,14 @@ class DubinsCar(object):
 
 		# check if control is non-zero
 		if np.abs(u-0.0) > 1e-08:
-			x_next = x + (self.car_vel/u)*(np.sin(theta + u*self.dt) - np.sin(theta))
-			y_next = y - (self.car_vel/u)*(np.cos(theta + u*self.dt) - np.cos(theta))
-			theta_next = theta + u*self.dt
+			x_next = x + (self.car_vel/u)*(np.sin(theta + u*elapsed_time) - np.sin(theta))
+			y_next = y - (self.car_vel/u)*(np.cos(theta + u*elapsed_time) - np.cos(theta))
+			theta_next = theta + u*elapsed_time
 			return [x_next, y_next, theta_next]
 		else:
-			x_next = x + self.car_vel*self.dt*np.cos(theta)
-			y_next = y + self.car_vel*self.dt*np.sin(theta)
-			theta_next = theta + u*self.dt
+			x_next = x + self.car_vel*elapsed_time*np.cos(theta)
+			y_next = y + self.car_vel*elapsed_time*np.sin(theta)
+			theta_next = theta + u*elapsed_time
 			return [x_next, y_next, theta_next]
 
 if __name__ == '__main__':

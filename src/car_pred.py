@@ -236,8 +236,6 @@ class CarPrediction(object):
 			# update the map with where the car is at the current time
 			self.update_car_traj(xythetapose)
 
-			s = rospy.Time().now()
-
 			# infer the new car occupancy map from the current state
 			self.infer_occupancies() 
 	
