@@ -133,7 +133,6 @@ class CarPrediction(object):
 		self.real_lower = low
 		self.real_upper = up
 
-
 		# (real-world) start and goal locations 
 		self.real_start = rospy.get_param("pred/car"+self.car_number+"_real_start_"+self.example)
 		self.real_goals = rospy.get_param("pred/car"+self.car_number+"_real_goals_"+self.example)
@@ -158,21 +157,17 @@ class CarPrediction(object):
 		# resolution (m/cell) 
 		self.res_x = self.real_width/self.sim_width
 		self.res_y = self.real_height/self.sim_height
-		self.res_theta = self.real_theta/self.sim_theta
-
-		# NOTE: THIS DELTA T IS ONLY FOR X RES!
 
 		# compute the timestep (seconds/cell)
 		self.deltat_x = self.res_x/self.car_vel
 		self.deltat_y = self.res_y/self.car_vel
-		self.deltat_theta = self.res_theta/self.car_vel
+		self.dt = max(self.deltat_x, self.deltat_y)
 
 		# --- gridworld creation --- #
 
 		# grid world representing the experimental environment
 		self.gridworld = CarMDP(self.sim_width, self.sim_height, \
-			self.sim_theta, self.real_goals, self.real_lower, \
-			dt_x=self.deltat_x, dt_y=self.deltat_y, dt_theta=self.deltat_theta, 
+			self.sim_theta, self.real_goals, self.real_lower, dt=self.dt, \
 			vel=self.car_vel, res_x=self.res_x, res_y=self.res_y, \
 			allow_wait=True, obstacle_list=self.real_obstacles)
 
@@ -186,9 +181,7 @@ class CarPrediction(object):
 		print "	- car vel: ", self.car_vel
 		print "	- beta model: ", self.beta_model
 		print "	- prob thresh: ", self.prob_thresh
-		print "	- dt x: ", self.deltat_x
-		print "	- dt y: ", self.deltat_y
-		print "	- dt theta: ", self.deltat_theta
+		print "	- dt: ", self.dt
 		print "	- resolution x: ", self.res_x
 		print "	- resolution y: ", self.res_y
 		print "---------------------------------------------------"
@@ -220,6 +213,7 @@ class CarPrediction(object):
 		"""
 		Grabs the car's state from the mocap publisher
 		"""
+
 		curr_time = rospy.Time.now()
 		quat = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
 		euler = tf.transformations.euler_from_quaternion(quat)
@@ -234,11 +228,10 @@ class CarPrediction(object):
 	
 		time_diff = (curr_time - self.prev_t).to_sec()
 
-		min_dt = np.amin([self.deltat_x, self.deltat_y, self.deltat_theta])
 		# only use measurements of the car every deltat timesteps
-		if time_diff >= min_dt:
+		if time_diff >= self.dt:
 
-			self.prev_t += rospy.Duration.from_sec(min_dt) 
+			self.prev_t += rospy.Duration.from_sec(self.dt) 
 
 			# update the map with where the car is at the current time
 			self.update_car_traj(xythetapose)
@@ -254,7 +247,7 @@ class CarPrediction(object):
 			# publish occupancy grid list
 			if self.occupancy_grids is not None:
 				self.occu_pub.publish(self.grid_to_message())
-				self.visualize_occugrid(4)
+				self.visualize_occugrid(10)
 
 			self.prev_pos = xythetapose	
 			
@@ -459,7 +452,7 @@ class CarPrediction(object):
 			grid_msg = ProbabilityGrid()
 
 			# Set up the header.
-			grid_msg.header.stamp = curr_time + rospy.Duration(t*self.deltat_x)
+			grid_msg.header.stamp = curr_time + rospy.Duration(t*self.dt)
 			grid_msg.header.frame_id = "/world"
 
 			# .info is a nav_msgs/MapMetaData message. 

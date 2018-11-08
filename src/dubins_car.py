@@ -35,8 +35,7 @@ class DubinsCar(object):
 			time_diff = (curr_t - self.prev_t).to_sec()
 
 			# only use measurements of the car every deltat timesteps
-			min_dt = np.amin([self.deltat_x, self.deltat_y, self.deltat_theta])
-			if time_diff >= min_dt:
+			if time_diff >= self.dt:
 				self.update_pose(t_since_start)
 				self.prev_t = curr_t
 			
@@ -98,12 +97,11 @@ class DubinsCar(object):
 		# resolution (m/cell)
 		self.res_x = self.real_width/self.sim_width
 		self.res_y = self.real_height/self.sim_height
-		self.res_theta = self.real_theta/self.sim_theta
 
 		# timestep (sec/cell)
 		self.deltat_x = self.res_x/self.car_vel
 		self.deltat_y = self.res_y/self.car_vel
-		self.deltat_theta = self.res_theta/self.car_vel
+		self.dt = max(self.deltat_x, self.deltat_y)
 
 		self.curr_state = self.real_start
 
@@ -194,19 +192,19 @@ class DubinsCar(object):
 			elif curr_time >= 4.0 and curr_time < 5.5:
 				# turn left
 				return self.dynamics(u)
-			elif curr_time >= 5.5 and curr_time < 9.0:
+			elif curr_time >= 5.5 and curr_time < 8.5:
 				# turn right
 				return self.dynamics(-u)
-			elif curr_time >= 9.0 and curr_time < 10.5:
+			elif curr_time >= 8.5 and curr_time < 10.0:
 				# turn left
 				return self.dynamics(u)
 			else:
 				return self.dynamics(0.0)
 		elif self.example == "goal":
 			# take a turn off the road
-			if curr_time >= 0.0 and curr_time < 4.0:
+			if curr_time >= 0.0 and curr_time < 7.0:
 				return self.dynamics(0.0)
-			elif curr_time >= 4.0 and curr_time < 7.0:
+			elif curr_time >= 7.0 and curr_time < 9.5:
 				return self.dynamics(-u)
 			else:
 				return self.dynamics(0.0)
@@ -222,14 +220,14 @@ class DubinsCar(object):
 
 		# check if control is non-zero
 		if np.abs(u-0.0) > 1e-08:
-			x_next = x + (self.car_vel/u)*(np.sin(theta + u*self.deltat_x) - np.sin(theta))
-			y_next = y - (self.car_vel/u)*(np.cos(theta + u*self.deltat_y) - np.cos(theta))
-			theta_next = theta + u*self.deltat_theta
+			x_next = x + (self.car_vel/u)*(np.sin(theta + u*self.dt) - np.sin(theta))
+			y_next = y - (self.car_vel/u)*(np.cos(theta + u*self.dt) - np.cos(theta))
+			theta_next = theta + u*self.dt
 			return [x_next, y_next, theta_next]
 		else:
-			x_next = x + self.car_vel*self.deltat_x*np.cos(theta)
-			y_next = y + self.car_vel*self.deltat_y*np.sin(theta)
-			theta_next = theta + u*self.deltat_theta
+			x_next = x + self.car_vel*self.dt*np.cos(theta)
+			y_next = y + self.car_vel*self.dt*np.sin(theta)
+			theta_next = theta + u*self.dt
 			return [x_next, y_next, theta_next]
 
 if __name__ == '__main__':
