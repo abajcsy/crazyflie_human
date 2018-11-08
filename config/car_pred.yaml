@@ -1,38 +1,69 @@
+#------------------------------------------------------------------------#
+# This file describes the simulation and prediction parameters
+# for the three dubins car examples described in the IJRR 2018 submission 
+# "Confidence-aware motion prediction for real-time collision avoidance". 
+#------------------------------------------------------------------------#
+
 state:
 
   # Upper and lower bounds for experimental space (meters, meters, radians). [x, y, theta]
-  lower: [0.0, 0.0, 0] 
-  upper: [20, 20, 6.28318531]
+  lower_accurate: [0.0, 0.0, 0] 
+  upper_accurate: [14.0, 20.0, 6.28318531]
+
+  lower_goal: [0.0, 0.0, 0] 
+  upper_goal: [14.0, 20.0, 6.28318531]
+
+  lower_obstacle: [0.0, 0.0, 0] 
+  upper_obstacle: [8.0, 20.0, 6.28318531]
 
 pred:
   # Total number of cars that you will be simulating. 
   total_number_of_cars: 1
 
-  # Start position of cars(s) and list of potential goal locations
-
   # -- "Accurate" Example (going straight at a T-intersection) -- #
-  car1_real_start_accurate: [11.5, 1, 1.57079633] 
-  car1_real_goals_accurate: [[11.5, 19, 1.57079633], [1.0, 11.5, 3.1415927]] 
+  # Start position of cars(s) and list of potential goal locations
+  car1_real_start_accurate: [11.5, 0.5, 1.57079633]
+  car1_real_goals_accurate: [[11.5, 19.5, 1.57079633], [1.0, 11.5, 3.1415927]] 
+
   # List of obstacles defined by [lower[x][y], upper[x][y]]
-  car1_real_obstacles_accurate: [ [[13.0,0.0],[20.0,20.0]], [[0.0,13.0], [7.0,20.0]], [[0.0,0.0], [10.0,10.0]] ] 
+  car1_real_obstacles_accurate: [ [[0.0,0.0], [10.0,10.0]], [[13.0,0.0],[14.0,20.0]], [[0.0,13.0], [7.0,20.0]] ] 
+
+  # Dimensions of the prediction map
+  sim_width_accurate: 14   # (num x states)
+  sim_height_accurate: 20  # (num y states)
+  sim_theta_accurate: 12   # (num theta states)
+  # ------------------------------------------------------------- #
 
   # -- "Unmodeled goal" Example (going on a dirt road off the side of the highway) -- #
-  car1_real_start_goal: [11.5, 1, 1.57079633] 
-  car1_real_goals_goal: [[11.5, 19, 1.57079633]] # true goal: [1.0, 11.5, 3.1415927]
-  car1_real_obstacles_goal: [ [[13.0,0.0],[20.0,7.0]], [[13.0,13.0], [20.0,20.0]], [[0.0,0.0], [7.0,20.0]] ] 
+  # Start position of cars(s) and list of potential goal locations
+  car1_real_start_goal: [5.5, 0.5, 1.57079633]
+  car1_real_goals_goal: [[5.5, 19.5, 1.57079633]] # True goal: [14.0, 8.5, 0.0]
+
+  # List of obstacles defined by [lower[x][y], upper[x][y]]
+  car1_real_obstacles_goal: [ [[0.0,0.0], [1.0, 20.0]], [[7.0,0.0],[14.0,7.0]], [[7.0,13.0], [14.0,20.0]] ] 
+
+  # Dimensions of the prediction map
+  sim_width_goal: 14   # (num x states)
+  sim_height_goal: 20  # (num y states)
+  sim_theta_goal: 12   # (num theta states)
+  # --------------------------------------------------------------------------------- #
 
   # -- "Unmodeled obstacle" Example (going around a pothole on the road) -- #
-  car1_real_start_obstacle: [11.5, 1, 1.57079633] 
-  car1_real_goals_obstacle: [[11.5, 19, 1.57079633]]
-  car1_real_obstacles_obstacle: [ [[13.0,0.0],[20.0,20.0]], [[0.0,0.0], [7.0,20.0]] ] 
+  car1_real_start_obstacle: [5.5, 0.5, 1.57079633] #[11.5, 1, 1.57079633] 
+  car1_real_goals_obstacle: [[5.5, 19.5, 1.57079633]] #[[11.5, 19, 1.57079633]]
+  
+  # List of obstacles defined by [lower[x][y], upper[x][y]]
+  #car1_real_obstacles_obstacle: [ [[0.0,0.0], [7.0,20.0]], [[13.0,0.0],[20.0,20.0]] ] 
+  car1_real_obstacles_obstacle: [ [[0.0,0.0], [1.0,20.0]], [[7.0,0.0],[8.0,20.0]] ] 
+
+  # Dimensions of the prediction map
+  sim_width_obstacle: 10   # (num x states)
+  sim_height_obstacle: 25  # (num y states)
+  sim_theta_obstacle: 12   # (num theta states)
+  # ----------------------------------------------------------------------- #
 
   # color coding for car visualization (RGB)
   car1_color: [1.0, 0.0, 0.0]
-
-  # Dimensions of the prediction map
-  sim_height: 20  # (num x states)
-  sim_width: 20   # (num y states)
-  sim_theta: 12   # (num theta states)
 
   # Num timesteps into the future to predict
   fwd_tsteps: 10

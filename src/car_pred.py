@@ -81,11 +81,14 @@ class CarPrediction(object):
 		# --- simulation params ---# 
 		self.car_number = str(rospy.get_param("car_number"))
 		
-		# measurements of gridworld
-		self.sim_height = int(rospy.get_param("pred/sim_height"))
-		self.sim_width = int(rospy.get_param("pred/sim_width"))
-		self.sim_theta = int(rospy.get_param("pred/sim_theta"))
+		# are we simulating the accurate example, unmodeled goal, or 
+		# unmodeled obstacle?
+		self.example = rospy.get_param("example")
 
+		# measurements of gridworld
+		self.sim_height = int(rospy.get_param("pred/sim_height_"+self.example))
+		self.sim_width = int(rospy.get_param("pred/sim_width_"+self.example))
+		self.sim_theta = int(rospy.get_param("pred/sim_theta_"+self.example))
 
 		# simulation forward prediction parameters
 		self.fwd_tsteps = rospy.get_param("pred/fwd_tsteps")
@@ -118,19 +121,18 @@ class CarPrediction(object):
 
 		# --- real-world params ---# 
 
-		low = rospy.get_param("state/lower")
-		up = rospy.get_param("state/upper")
+		low = rospy.get_param("state/lower_"+self.example)
+		up = rospy.get_param("state/upper_"+self.example)
 
 		# get real-world measurements of experimental space
-		self.real_height = up[1] - low[1] 
-		self.real_width = up[0] - low[0] 
+		self.real_width = up[0] - low[0]
+		self.real_height = up[1] - low[1]  
+		self.real_theta = up[2] - low[2]
+
 		# store the lower and upper measurements
 		self.real_lower = low
 		self.real_upper = up
 
-		# are we simulating the accurate example, unmodeled goal, or 
-		# unmodeled obstacle?
-		self.example = rospy.get_param("example")
 
 		# (real-world) start and goal locations 
 		self.real_start = rospy.get_param("pred/car"+self.car_number+"_real_start_"+self.example)
@@ -153,22 +155,26 @@ class CarPrediction(object):
 		# get the speed of the car (meters/sec)
 		self.car_vel = rospy.get_param("pred/car_vel")
 
-		# resolution (m/cell) -- NOTE: ASSUMES SQUARE GRID
-		self.res = self.real_height/self.sim_height 
+		# resolution (m/cell) 
+		self.res_x = self.real_width/self.sim_width
+		self.res_y = self.real_height/self.sim_height
+		self.res_theta = self.real_theta/self.sim_theta
+
+		# NOTE: THIS DELTA T IS ONLY FOR X RES!
 
 		# compute the timestep (seconds/cell)
-		self.deltat = self.res/self.car_vel
+		self.deltat_x = self.res_x/self.car_vel
+		self.deltat_y = self.res_y/self.car_vel
+		self.deltat_theta = self.res_theta/self.car_vel
 
 		# --- gridworld creation --- #
 
-		# TODO: I HAVEN'T TESTED OBSTACLE_LIST NOT BEING NONE YET.
-
-		# compute velocity in cells/timestep
-		# vel_gridworld = self.car_vel*(1/self.res)*self.deltat
-
 		# grid world representing the experimental environment
-		self.gridworld = CarMDP(self.sim_height, self.sim_width, self.sim_theta, self.real_goals, 
-			self.real_lower, dt=self.deltat, vel=self.car_vel, res=self.res, allow_wait=True, obstacle_list=self.real_obstacles)
+		self.gridworld = CarMDP(self.sim_width, self.sim_height, \
+			self.sim_theta, self.real_goals, self.real_lower, \
+			dt_x=self.deltat_x, dt_y=self.deltat_y, dt_theta=self.deltat_theta, 
+			vel=self.car_vel, res_x=self.res_x, res_y=self.res_y, \
+			allow_wait=True, obstacle_list=self.real_obstacles)
 
 		# (simulation) start and goal locations
 		self.sim_start = self.gridworld.real_to_coor(self.real_start[0], self.real_start[1], self.real_start[2])
@@ -180,8 +186,11 @@ class CarPrediction(object):
 		print "	- car vel: ", self.car_vel
 		print "	- beta model: ", self.beta_model
 		print "	- prob thresh: ", self.prob_thresh
-		print "	- delta t: ", self.deltat
-		print "	- resolution: ", self.res
+		print "	- dt x: ", self.deltat_x
+		print "	- dt y: ", self.deltat_y
+		print "	- dt theta: ", self.deltat_theta
+		print "	- resolution x: ", self.res_x
+		print "	- resolution y: ", self.res_y
 		print "---------------------------------------------------"
 
 	#TODO THESE TOPICS SHOULD BE FROM THE YAML/LAUNCH FILE
@@ -225,10 +234,11 @@ class CarPrediction(object):
 	
 		time_diff = (curr_time - self.prev_t).to_sec()
 
+		min_dt = np.amin([self.deltat_x, self.deltat_y, self.deltat_theta])
 		# only use measurements of the car every deltat timesteps
-		if time_diff >= self.deltat:
+		if time_diff >= min_dt:
 
-			self.prev_t += rospy.Duration.from_sec(self.deltat) 
+			self.prev_t += rospy.Duration.from_sec(min_dt) 
 
 			# update the map with where the car is at the current time
 			self.update_car_traj(xythetapose)
@@ -310,69 +320,11 @@ class CarPrediction(object):
 			self.sim_goals, self.betas, T=self.fwd_tsteps, use_gridless=False, priors=self.dest_beta_prob,
 			traj=[(state, action)], epsilon_dest=self.epsilon_dest, epsilon_beta=self.epsilon_beta, verbose_return=True)
 
+		print "----P(dest, beta):----"
+		print self.dest_beta_prob
+		print "----------------------"
+
 	# ---- Utility Functions ---- #
-	"""
-	def traj_to_state_action(self):
-		
-		#Converts the measured state-based sim_car_traj into (state, action) traj.
-				
-		prev = self.sim_car_traj[0]		
-		states = np.array([prev])
-		actions = None
-		for i in range(1,len(self.sim_car_traj)):
-			next = self.sim_car_traj[i]
-			# dont consider duplicates of the same measurement
-			if not np.array_equal(prev, next):
-				states = np.append(states, [next], 0)
-				curr_action = self.motion_to_action(prev, next)
-
-				if actions is None:
-					actions = np.array([curr_action])
-				else:
-					actions = np.append(actions, curr_action)			
-			prev = next
-
-		grid_states = [self.gridworld.coor_to_state(s[0], s[1], s[2]) for s in states]
-
-		sa_traj = []
-		if actions is not None:
-			for i in range(len(actions)):			
-				sa_traj.append((grid_states[i], actions[i]))
-
-		return sa_traj
-
-	def motion_to_action(self, prev_pos, next_pos):
-		
-		#Takes two measured positions of the car (previous and next) 
-		#and returns the gridworld action that the car took.
-		
-		xdiff = next_pos[0] - prev_pos[0]
-		ydiff = next_pos[1] - prev_pos[1]
-		thetadiff = next_pos[2] - prev_pos[2]
-		if xdiff < 0:
-			if ydiff < 0:
-					action = Actions.DOWN_LEFT
-			elif ydiff == 0:	
-					action = Actions.LEFT		
-			else:
-					action = Actions.UP_LEFT
-		elif xdiff == 0:
-			if ydiff < 0:
-					action = Actions.DOWN
-			elif ydiff == 0:
-					action = Actions.ABSORB		# note this should only happen at goal
-			else:
-					action = Actions.UP
-		else:
-			if ydiff < 0:
-				action = Actions.DOWN_RIGHT
-			elif ydiff == 0:
-				action = Actions.RIGHT
-			else:
-				action = Actions.UP_RIGHT	
-
-		return action
-	"""
 
 	def interpolate_grid(self, future_time):
 		"""
@@ -437,8 +389,8 @@ class CarPrediction(object):
 			marker.type = marker.CUBE_LIST
 			marker.action = marker.ADD
 
-			marker.scale.x = self.res
-			marker.scale.y = self.res
+			marker.scale.x = self.res_x
+			marker.scale.y = self.res_y
 			marker.scale.z = self.car_height
 
 			for t in range(time):
@@ -448,8 +400,8 @@ class CarPrediction(object):
 				# 		FOR A PARTICULAR (x,y)
 				if grid is not None:
 					grid_3D = self.convert_occugrid_1Dto3D(grid)
-					for x in range(self.sim_height):
-						for y in range(self.sim_width):
+					for x in range(self.sim_width):
+						for y in range(self.sim_height):
 
 							# sum over all theta's to get P(x,y)
 							probability = np.sum(grid_3D[x,y,:])
@@ -479,7 +431,7 @@ class CarPrediction(object):
 		Given flattened 1D occupancy grid at a particular time, return the
 		3D occupancy grid.
 		"""
-		occugrid_3D = np.zeros((self.sim_height, self.sim_width, self.sim_theta))
+		occugrid_3D = np.zeros((self.sim_width, self.sim_height, self.sim_theta))
 
 		for i in range(len(occugrid)):
 			(x,y,theta) = self.gridworld.state_to_coor(i)
@@ -489,8 +441,10 @@ class CarPrediction(object):
 
 	# ---- ROS Message Conversion ---- #
 
+	# ---------------------------------------------------------------------#
 	# TODO: THIS IS WRONG. NEED TO MODIFY THE OCCUPANCY GRID TIME MESSAGE
 	# 		STRUCTURE TO ACCEPT ANOTHER DIMENSION.
+	# ---------------------------------------------------------------------#
 	def grid_to_message(self):
 		"""
 		Converts OccupancyGridTime structure to ROS msg
@@ -505,11 +459,11 @@ class CarPrediction(object):
 			grid_msg = ProbabilityGrid()
 
 			# Set up the header.
-			grid_msg.header.stamp = curr_time + rospy.Duration(t*self.deltat)
+			grid_msg.header.stamp = curr_time + rospy.Duration(t*self.deltat_x)
 			grid_msg.header.frame_id = "/world"
 
 			# .info is a nav_msgs/MapMetaData message. 
-			grid_msg.resolution = self.res
+			grid_msg.resolution = self.res_x
 			grid_msg.width = self.sim_width
 			grid_msg.height = self.sim_height
 
@@ -541,9 +495,9 @@ class CarPrediction(object):
 		marker.action = marker.ADD
 		marker.pose.orientation.w = 1
 		marker.pose.position.z = 0
-		marker.scale.x = self.res
-		marker.scale.y = self.res/2.0
-		marker.scale.z = self.res
+		marker.scale.x = self.res_x
+		marker.scale.y = self.res_y/2.0
+		marker.scale.z = self.res_x
 		marker.color.a = 1.0
 		marker.color.r = color[0]
 		marker.color.g = color[1]
@@ -572,7 +526,7 @@ class CarPrediction(object):
 		marker.pose.position.z = 0
 		marker.scale.x = xlen
 		marker.scale.y = ylen
-		marker.scale.z = self.res
+		marker.scale.z = self.res_x
 		marker.color.a = 0.5
 		marker.color.r = 0.0
 		marker.color.g = 0.0
@@ -593,9 +547,9 @@ class CarPrediction(object):
 		marker.action = marker.ADD
 		marker.pose.orientation.w = 1
 		marker.pose.position.z = 0.1
-		marker.scale.x = self.res
-		marker.scale.y = self.res
-		marker.scale.z = self.car_height*self.res 
+		marker.scale.x = self.res_x
+		marker.scale.y = self.res_y
+		marker.scale.z = self.car_height*self.res_y 
 		marker.color.a = 1.0
 		marker.color.r = color[0]
 		marker.color.g = color[1]

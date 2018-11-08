@@ -25,21 +25,20 @@ class DubinsCar(object):
 
 		rate = rospy.Rate(100)
 
+		# compute timetamps for simulation
+		self.start_T = rospy.Time.now()
 		self.prev_t = rospy.Time.now()
 
 		while not rospy.is_shutdown():
-			t_since_start = rospy.Time.now().secs - self.start_T
 			curr_t = rospy.Time.now()
+			t_since_start = (curr_t - self.start_T).to_sec()
 			time_diff = (curr_t - self.prev_t).to_sec()
 
-			# induce fake time dilation to make predictions catch up!
-			TIME_DILATION = 1.0
-			time_diff = time_diff/TIME_DILATION
-
 			# only use measurements of the car every deltat timesteps
-			if time_diff >= self.deltat:
-				self.update_pose(t_since_start/TIME_DILATION)
-				self.prev_t += rospy.Duration.from_sec(self.deltat) 
+			min_dt = np.amin([self.deltat_x, self.deltat_y, self.deltat_theta])
+			if time_diff >= min_dt:
+				self.update_pose(t_since_start)
+				self.prev_t = curr_t
 			
 			if self.car_pose is not None:
 				self.state_pub.publish(self.car_pose)
@@ -61,12 +60,13 @@ class DubinsCar(object):
 		# unmodeled obstacle?
 		self.example = rospy.get_param("example")
 
-		low = rospy.get_param("state/lower")
-		up = rospy.get_param("state/upper")
+		low = rospy.get_param("state/lower_"+self.example)
+		up = rospy.get_param("state/upper_"+self.example)
 
 		# get real-world measurements of experimental space
-		self.real_height = up[1] - low[1] 
 		self.real_width = up[0] - low[0] 
+		self.real_height = up[1] - low[1] 
+		self.real_theta = up[2] - low[2]
 		self.real_lower = low
 		self.real_upper = up
 
@@ -76,7 +76,7 @@ class DubinsCar(object):
 		if self.example == "goal":
 			# if the example is to simulate going to an unmodeled goal, 
 			# set the unmodeled goal here (so prediction is unaware)
-			self.real_goals = [[1.0, 11.5, 3.1415927]]
+			self.real_goals = [[14.0, 8.5, 0.0]]
 		self.car_height = rospy.get_param("pred/car_height")
 
 		# color to use to represent this car
@@ -85,19 +85,25 @@ class DubinsCar(object):
 		# compute the timestep (seconds/cell)
 		self.car_vel = rospy.get_param("pred/car_vel")
 
-		# compute timetamps for waypts
-		self.start_T = rospy.Time.now().secs
-
 		# store PoseStamped message for publishing
 		self.car_pose = None
 
 		# --- simulation params ---# 
-		# grid world height
-		self.sim_height = int(rospy.get_param("pred/sim_height"))
 
-		# resolution (m/cell) -- NOTE: ASSUMES SQUARE GRID
-		self.res = self.real_height/self.sim_height 
-		self.deltat = self.res/self.car_vel
+		# grid world height
+		self.sim_height = int(rospy.get_param("pred/sim_height_"+self.example))
+		self.sim_width = int(rospy.get_param("pred/sim_width_"+self.example))
+		self.sim_theta = int(rospy.get_param("pred/sim_theta_"+self.example))
+
+		# resolution (m/cell)
+		self.res_x = self.real_width/self.sim_width
+		self.res_y = self.real_height/self.sim_height
+		self.res_theta = self.real_theta/self.sim_theta
+
+		# timestep (sec/cell)
+		self.deltat_x = self.res_x/self.car_vel
+		self.deltat_y = self.res_y/self.car_vel
+		self.deltat_theta = self.res_theta/self.car_vel
 
 		self.curr_state = self.real_start
 
@@ -119,9 +125,9 @@ class DubinsCar(object):
 		marker.action = marker.ADD
 		marker.pose.orientation.w = 1
 		marker.pose.position.z = 0.1
-		marker.scale.x = self.res
-		marker.scale.y = self.res/2.0
-		marker.scale.z = self.res*self.car_height
+		marker.scale.x = self.res_x
+		marker.scale.y = self.res_y/2.0
+		marker.scale.z = self.res_x*self.car_height
 		marker.color.a = 1.0		
 		marker.color.r = color[0]
 		marker.color.g = color[1]
@@ -183,25 +189,24 @@ class DubinsCar(object):
 			return self.dynamics(0.0)
 		elif self.example == "obstacle":
 			# swerve around a pothole on side of road
-			if curr_time >= 0.0 and curr_time < 2.0:
+			if curr_time >= 0.0 and curr_time < 4.0:
 				return self.dynamics(0.0)
-			elif curr_time >= 2.0 and curr_time < 4.0:
+			elif curr_time >= 4.0 and curr_time < 5.5:
 				# turn left
 				return self.dynamics(u)
-			elif curr_time >= 4.0 and curr_time < 6.0:
+			elif curr_time >= 5.5 and curr_time < 9.0:
 				# turn right
 				return self.dynamics(-u)
-			elif curr_time >= 6.0 and curr_time < 8.0:
-				return self.dynamics(-u)
-			elif curr_time >= 8.0 and curr_time < 10.0:
+			elif curr_time >= 9.0 and curr_time < 10.5:
+				# turn left
 				return self.dynamics(u)
 			else:
 				return self.dynamics(0.0)
 		elif self.example == "goal":
 			# take a turn off the road
-			if curr_time >= 0.0 and curr_time < 6.0:
+			if curr_time >= 0.0 and curr_time < 4.0:
 				return self.dynamics(0.0)
-			elif curr_time >= 6.0 and curr_time < 9.0:
+			elif curr_time >= 4.0 and curr_time < 7.0:
 				return self.dynamics(-u)
 			else:
 				return self.dynamics(0.0)
@@ -213,19 +218,19 @@ class DubinsCar(object):
 		"""
 		x = self.curr_state[0]
 		y = self.curr_state[1]
-		phi = self.curr_state[2]
+		theta = self.curr_state[2]
 
 		# check if control is non-zero
 		if np.abs(u-0.0) > 1e-08:
-			x_next = x + (self.car_vel/u)*(np.sin(phi + u*self.deltat) - np.sin(phi))
-			y_next = y - (self.car_vel/u)*(np.cos(phi + u*self.deltat) - np.cos(phi))
-			phi_next = phi + u*self.deltat
-			return [x_next, y_next, phi_next]
+			x_next = x + (self.car_vel/u)*(np.sin(theta + u*self.deltat_x) - np.sin(theta))
+			y_next = y - (self.car_vel/u)*(np.cos(theta + u*self.deltat_y) - np.cos(theta))
+			theta_next = theta + u*self.deltat_theta
+			return [x_next, y_next, theta_next]
 		else:
-			x_next = x + self.car_vel*self.deltat*np.cos(phi)
-			y_next = y + self.car_vel*self.deltat*np.sin(phi)
-			phi_next = phi + u*self.deltat
-			return [x_next, y_next, phi_next]
+			x_next = x + self.car_vel*self.deltat_x*np.cos(theta)
+			y_next = y + self.car_vel*self.deltat_y*np.sin(theta)
+			theta_next = theta + u*self.deltat_theta
+			return [x_next, y_next, theta_next]
 
 if __name__ == '__main__':
 	car = DubinsCar()
