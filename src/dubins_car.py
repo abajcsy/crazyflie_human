@@ -201,9 +201,9 @@ class DubinsCar(object):
 				return self.dynamics(0.0, elapsed_time)
 		elif self.example == "goal":
 			# take a turn off the road
-			if curr_time >= 0.0 and curr_time < 7.0:
+			if curr_time >= 0.0 and curr_time < 6.0:
 				return self.dynamics(0.0, elapsed_time)
-			elif curr_time >= 7.0 and curr_time < 9.5:
+			elif curr_time >= 6.0 and curr_time < 9.0:
 				return self.dynamics(-u, elapsed_time)
 			else:
 				return self.dynamics(0.0, elapsed_time)
