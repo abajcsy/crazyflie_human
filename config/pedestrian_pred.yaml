@@ -54,9 +54,15 @@ pred:
   epsilon_dest: 0.02
   epsilon_beta: 0.02
 
+  # Model type -- can be 'FREESPACE', 'BOLTZMANN', 'FRT'
+  model_list: ["BOLTZMANN"]
+
+  # Save file
+  metrics_file_name: "prediction_times"
+
 sim:
   # Specify the robot prefixes to listen to (obstacles)
-  robot_prefixes: ["HY4", "HY5"]
+  robot_prefix: "HY4"
 
   # Timestep 
   dt: 0.01

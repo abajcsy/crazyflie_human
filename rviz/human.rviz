@@ -35,7 +35,7 @@ Visualization Manager:
       Cell Size: 1
       Class: rviz/Grid
       Color: 46; 46; 47
-      Enabled: false
+      Enabled: true
       Line Style:
         Line Width: 0.0299999993
         Value: Lines
@@ -48,7 +48,7 @@ Visualization Manager:
       Plane: XY
       Plane Cell Count: 100
       Reference Frame: world
-      Value: false
+      Value: true
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /world_marker
@@ -58,7 +58,7 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/TF
-      Enabled: false
+      Enabled: true
       Frame Timeout: 10000
       Frames:
         All Enabled: false
@@ -70,7 +70,7 @@ Visualization Manager:
       Tree:
         {}
       Update Interval: 0
-      Value: false
+      Value: true
     - Class: rviz/Marker
       Enabled: false
       Marker Topic: /vis/known_envHY4
@@ -92,7 +92,7 @@ Visualization Manager:
       Marker Topic: /vis/boundHY4
       Name: TrackingBound1
       Namespaces:
-        bound: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -100,31 +100,7 @@ Visualization Manager:
       Marker Topic: /vis/boundHY5
       Name: TrackingBound2
       Namespaces:
-        bound: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /vis/boundHY6
-      Name: TrackingBound3
-      Namespaces:
-        bound: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /vis/boundHY7
-      Name: TrackingBound4
-      Namespaces:
-        bound: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /vis/boundHY8
-      Name: TrackingBound5
-      Namespaces:
-        bound: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -132,8 +108,7 @@ Visualization Manager:
       Marker Topic: /vis/trajHY4
       Name: Trajectory1
       Namespaces:
-        lines: true
-        spheres: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -141,35 +116,7 @@ Visualization Manager:
       Marker Topic: /vis/trajHY5
       Name: Trajectory2
       Namespaces:
-        lines: true
-        spheres: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /vis/trajHY6
-      Name: Trajectory3
-      Namespaces:
-        lines: true
-        spheres: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /vis/trajHY7
-      Name: Trajectory4
-      Namespaces:
-        lines: true
-        spheres: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /vis/trajHY8
-      Name: Trajectory5
-      Namespaces:
-        lines: true
-        spheres: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -222,75 +169,12 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
-    - Alpha: 1
-      Class: rviz/RobotModel
-      Collision Enabled: false
-      Enabled: true
-      Links:
-        All Links Enabled: true
-        Expand Joint Details: false
-        Expand Link Details: false
-        Expand Tree: false
-        Link Tree Style: Links in Alphabetic Order
-        base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-      Name: RobotModel3
-      Robot Description: robot_description
-      TF Prefix: trackerHY6
-      Update Interval: 0
-      Value: true
-      Visual Enabled: true
-    - Alpha: 1
-      Class: rviz/RobotModel
-      Collision Enabled: false
-      Enabled: true
-      Links:
-        All Links Enabled: true
-        Expand Joint Details: false
-        Expand Link Details: false
-        Expand Tree: false
-        Link Tree Style: Links in Alphabetic Order
-        base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-      Name: RobotModel4
-      Robot Description: robot_description
-      TF Prefix: trackerHY7
-      Update Interval: 0
-      Value: true
-      Visual Enabled: true
-    - Alpha: 1
-      Class: rviz/RobotModel
-      Collision Enabled: false
-      Enabled: true
-      Links:
-        All Links Enabled: true
-        Expand Joint Details: false
-        Expand Link Details: false
-        Expand Tree: false
-        Link Tree Style: Links in Alphabetic Order
-        base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-      Name: RobotModel5
-      Robot Description: robot_description
-      TF Prefix: trackerHY8
-      Update Interval: 0
-      Value: true
-      Visual Enabled: true
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /human_marker1
       Name: Human1
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -298,71 +182,7 @@ Visualization Manager:
       Marker Topic: /human_marker2
       Name: Human2
       Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /human_marker3
-      Name: Human3
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /human_marker4
-      Name: Human4
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /human_marker5
-      Name: Human5
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /human_marker6
-      Name: Human6
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /human_marker7
-      Name: Human7
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /human_marker8
-      Name: Human8
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /human_marker9
-      Name: Human9
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /human_marker10
-      Name: Human10
-      Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -370,7 +190,7 @@ Visualization Manager:
       Marker Topic: /goal_markers1
       Name: GoalsHuman1
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -378,71 +198,7 @@ Visualization Manager:
       Marker Topic: /goal_markers2
       Name: GoalsHuman2
       Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /goal_markers3
-      Name: GoalsHuman3
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /goal_markers4
-      Name: GoalsHuman4
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /goal_markers5
-      Name: GoalsHuman5
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /goal_markers6
-      Name: GoalsHuman6
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /goal_markers7
-      Name: GoalsHuman7
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /goal_markers8
-      Name: GoalsHuman8
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /goal_markers9
-      Name: GoalsHuman9
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /goal_markers10
-      Name: GoalsHuman10
-      Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -450,7 +206,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker1
       Name: OccuGridHuman1
       Namespaces:
-        visualize: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -458,71 +214,7 @@ Visualization Manager:
       Marker Topic: /occu_grid_marker2
       Name: OccuGridHuman2
       Namespaces:
-        visualize: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /occu_grid_marker3
-      Name: OccuGridHuman3
-      Namespaces:
-        visualize: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /occu_grid_marker4
-      Name: OccuGridHuman4
-      Namespaces:
-        visualize: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /occu_grid_marker5
-      Name: OccuGridHuman5
-      Namespaces:
-        visualize: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /occu_grid_marker6
-      Name: OccuGridHuman6
-      Namespaces:
-        visualize: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /occu_grid_marker7
-      Name: OccuGridHuman7
-      Namespaces:
-        visualize: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /occu_grid_marker8
-      Name: OccuGridHuman8
-      Namespaces:
-        visualize: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /occu_grid_marker9
-      Name: OccuGridHuman9
-      Namespaces:
-        visualize: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /occu_grid_marker10
-      Name: OccuGridHuman10
-      Namespaces:
-        visualize: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -530,7 +222,7 @@ Visualization Manager:
       Marker Topic: /vis/goalHY4
       Name: GoalRobot1
       Namespaces:
-        sphere: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -538,31 +230,7 @@ Visualization Manager:
       Marker Topic: /vis/goalHY5
       Name: GoalRobot2
       Namespaces:
-        sphere: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /vis/goalHY6
-      Name: GoalRobot3
-      Namespaces:
-        sphere: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /vis/goalHY7
-      Name: GoalRobot4
-      Namespaces:
-        sphere: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /vis/goalHY8
-      Name: GoalRobot5
-      Namespaces:
-        sphere: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -575,7 +243,7 @@ Visualization Manager:
       Value: false
   Enabled: true
   Global Options:
-    Background Color: 0; 255; 0
+    Background Color: 255; 255; 255
     Default Light: true
     Fixed Frame: world
     Frame Rate: 30
@@ -598,25 +266,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 28
+      Distance: 52.5358772
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.78082204
-        Y: -5.6611557
-        Z: 0
+        X: -2.55601239
+        Y: -20.9406319
+        Z: 2.86102295e-06
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.56979632
+      Pitch: 0.719601452
       Target Frame: <Fixed Frame>
       Value: ThirdPersonFollower (rviz)
-      Yaw: 4.72357464
+      Yaw: 4.70855665
     Saved: ~
 Window Geometry:
   Displays:

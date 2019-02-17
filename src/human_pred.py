@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 from __future__ import division
 import rospy
+import rospkg
 import sys, select, os
 import numpy as np
 import time
@@ -11,7 +12,8 @@ from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion, Pose2D, Vector3
 from visualization_msgs.msg import Marker, MarkerArray
 from crazyflie_human.msg import OccupancyGridTime, ProbabilityGrid
-
+from fastrack_msgs.msg import Trajectory
+from crazyflie_msgs.msg import PositionVelocityYawStateStamped
 # Get the path of this file, go up two directories, and add that to our 
 # Python path so that we can import the pedestrian_prediction module.
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../../")
@@ -57,8 +59,14 @@ class HumanPrediction(object):
 		while not rospy.is_shutdown():
 			# plot start/goal markers for visualization
 			# self.goal_pub.publish(marker_array)
-
 			rate.sleep()
+
+		# When ROS shuts down, save metrics.
+		if hasattr(self, "metrics_file_name"):
+			rospack = rospkg.RosPack()
+	        path = rospack.get_path('data_logger') + "/data/"
+	        pickle.dump(self.pred_compute_times, open(path + self.metrics_file_name + ".py", "wb"))
+
 
 	def load_parameters(self):
 		"""
@@ -110,6 +118,14 @@ class HumanPrediction(object):
 		# stores 2D array of size (fwd_tsteps) x (height x width) of probabilities
 		self.occupancy_grids = None
 
+		# model type; initially start with conservative FRT
+		self.model_type = "FRT"
+		self.model_list = rospy.get_param("pred/model_list")
+
+		# metrics file name
+		if rospy.has_param("pred/metrics_file_name"):
+			self.metrics_file_name = rospy.get_param("pred/metrics_file_name")
+
 		# stores list of beta values for each goal
 		self.beta_model = rospy.get_param("beta")
 		if self.beta_model == "irrational":
@@ -137,6 +153,7 @@ class HumanPrediction(object):
 		# store the previous time to compute deltat
 		self.prev_t = None
 		self.prev_pos = None
+		self.robot_pos = None
 
 		# get the speed of the human (meters/sec)
 		self.human_vel = rospy.get_param("pred/human_vel")
@@ -144,8 +161,15 @@ class HumanPrediction(object):
 		# compute the timestep (seconds/cell)
 		self.deltat = self.res_x/self.human_vel
 
-		# prediction compute time per run (used for benchmarks)
+		# Benchmarks: prediction compute time, trajectory time, distance to human
 		self.pred_compute_times = None
+		self.traj_time = None
+		self.dist_to_human = None
+
+		# robot prefixes
+		self.robot_prefix = rospy.get_param("sim/robot_prefix")
+		self.robot_traj_states = None
+		self.robot_traj_times = None
 
 		# TODO This is for debugging.
 		print "----- Running prediction for one human : -----"
@@ -163,6 +187,11 @@ class HumanPrediction(object):
 		# subscribe to the info of the human walking around the space
 		self.human_sub = rospy.Subscriber('/human_pose'+self.human_number, PoseStamped, 
 											self.human_state_callback, queue_size=1)
+		self.traj_sub = rospy.Subscriber('/traj'+self.robot_prefix, Trajectory, 
+											self.trajectory_callback, queue_size=1)
+		self.robot_sub = rospy.Subscriber('/state/position_velocity_yaw'+self.robot_prefix,
+											PositionVelocityYawStateStamped,
+											self.robot_state_callback, queue_size=1)
 
 		# occupancy grid publisher & small publishers for visualizing the goals
 		self.occu_pub = rospy.Publisher('/occupancy_grid_time'+self.human_number, 
@@ -174,6 +203,29 @@ class HumanPrediction(object):
 			Marker, queue_size=10)
 		self.human_marker_pub = rospy.Publisher('/human_marker'+self.human_number, 
 			Marker, queue_size=10)
+
+	# ---- Model Switching Functionality ---- #
+	def trajectory_callback(self, msg):
+		"""
+		Grabs the most recent trajectory and compute metrics
+		"""
+		self.robot_traj_states = msg.states
+		self.robot_traj_times = msg.times
+
+	def robot_state_callback(self, msg):
+	    self.robot_pos = [msg.state.x, msg.state.y]
+    
+    # Distance between human and robot.
+	def HR_distance(self):
+		if self.prev_pos is None or self.robot_pos is None:
+			return float("inf")
+		return np.linalg.norm(np.array(self.prev_pos) - np.array(self.robot_pos))
+
+	def traj_length(self):
+		if self.robot_traj_states is None:
+			return float("inf")
+		print "MODEL:", self.model_type, "; traj: ", self.robot_traj_states
+		return sum([np.linalg.norm(np.array(self.robot_traj_states[i+1].x[:2]) - np.array(s.x[:2])) for i, s in enumerate(self.robot_traj_states[:-1])])
 
 	# ---- Inference Functionality ---- #
 
@@ -201,44 +253,56 @@ class HumanPrediction(object):
 			# update the map with where the human is at the current time
 			self.update_human_traj(xypose)
 
-			# ====== METRICS ====== #
-			#s = rospy.Time().now()
-			# ====== METRICS ====== #
-
-			# infer the new human occupancy map from the current state
+			# First compute trajectory in FREESPACE
+			self.model_type = "FREESPACE"
 			self.infer_occupancies() 
-			
-			# ====== METRICS ====== #
-			"""
-			e = rospy.Time().now()
-			compute_time = (e-s).to_sec()
-
-			if self.pred_compute_times is None:
-				self.pred_compute_times = [compute_time]
-			else:
-				self.pred_compute_times.append(compute_time)
-
-			average_compute_time = sum(self.pred_compute_times)/len(self.pred_compute_times)
-
-			print "Human ", self.human_number, " Avg Compute Time: ", average_compute_time
-			"""
-			# ====== METRICS ====== #
-	
-			# update human pose marker
-			#self.human_marker_pub.publish(self.pose_to_marker(xypose, color=self.color))
-
-			# publish occupancy grid list
 			if self.occupancy_grids is not None:
 				self.occu_pub.publish(self.grid_to_message())
-				self.visualize_occugrid(2)
-				
+				time.sleep(0.1)
+			freespace_length = self.traj_length()
+
+			# Compute trajectory with FRT and compare to FREESPACE
+			self.model_type = "FRT"
+			self.infer_occupancies() 
+			if self.occupancy_grids is not None:
+				self.occu_pub.publish(self.grid_to_message())
+				time.sleep(0.1)
+			frt_length = self.traj_length()
+
+			# If FRT not good enough, compute trajectory with model_list
+			if freespace_length is not float("inf") and frt_length is not float("inf"):
+				print "freespace_length: ", freespace_length, "; frt_length: ", frt_length
+				if abs(freespace_length - frt_length) > 1.0:
+					self.model_type = self.model_list[0]
+					self.infer_occupancies() 
+					if self.occupancy_grids is not None:
+						self.occu_pub.publish(self.grid_to_message())
+						time.sleep(0.1)
+
 			# adjust the deltat based on the observed measurements
 			if self.prev_pos is not None:
 				self.human_vel = np.linalg.norm((np.array(xypose) - np.array(self.prev_pos)))/time_diff
 				self.deltat = np.minimum(np.maximum(self.res_x/self.human_vel,0.05),0.2)
 
+			if self.occupancy_grids is not None:
+				self.visualize_occugrid(2)
+
 			self.prev_pos = xypose	
 			
+	def compute_metrics(self, compute_time):
+		if self.pred_compute_times is None:
+			self.pred_compute_times = [compute_time]
+		else:
+			self.pred_compute_times.append(compute_time)
+		if self.robot_traj_times is not None:
+			self.traj_time = (self.robot_traj_times[-1] - self.robot_traj_times[0])
+		self.dist_to_human = self.HR_distance()
+		
+		average_compute_time = sum(self.pred_compute_times)/len(self.pred_compute_times)
+
+		print "Human ", self.human_number, ", Model: ",self.model_type, ", Avg Compute Time: ", average_compute_time
+		print "Human  ", self.human_number, ", Model: ",self.model_type, ", Distance from Robot: ", self.dist_to_human
+		print "Human ", self.human_number, ", Model: ",self.model_type, ", Replanned Trajectory Time: ", self.traj_time, "\n"		
 
 	def make_valid_state(self, xypose):
 		"""
@@ -281,6 +345,10 @@ class HumanPrediction(object):
 		Using the current trajectory data, recompute a new occupancy grid
 		for where the human might be.
 		"""
+
+		# METRICS
+		s = rospy.Time().now()
+
 		if self.real_human_traj is None or self.sim_human_traj is None:
 			print "Can't infer occupancies -- human hasn't appeared yet!"
 			return 
@@ -291,16 +359,28 @@ class HumanPrediction(object):
 		# Convert the human trajectory points from real-world to 2D grid values. 
 		traj = [self.real_to_sim_coord(x, round_vals=True) for x in self.real_human_traj] 
   
-  		# OPTION 1: The line below feeds in the entire human traj history so far
-  		# 			and does a single bulk Bayesian inference step.
-		# (self.occupancy_grids, self.beta_occu, self.dest_beta_prob) = inf.state.infer_joint(self.gridworld, 
-		# 	dest_list, self.betas, T=self.fwd_tsteps, use_gridless=True, traj=traj, verbose_return=True)
+  		if self.model_type == "BOLTZMANN":
+			(self.occupancy_grids, self.beta_occu, self.dest_beta_prob) = inf.state.infer_joint(self.gridworld, 
+				dest_list, self.betas, T=self.fwd_tsteps, use_gridless=True, priors=self.dest_beta_prob,
+				traj=traj[-2:], epsilon_dest=self.epsilon_dest, epsilon_beta=self.epsilon_beta, verbose_return=True)
+		elif self.model_type == "FREESPACE":
+			# We are planning in free space, so the grid is empty everywhere
+			self.occupancy_grids = np.zeros((self.fwd_tsteps+1, self.gridworld.S))
+		elif self.model_type == "FRT":
+			# Planning with Forward reachable sets.
+			# Get all humans, draw a circle of radius T around them, occupy the grid around there
+			self.occupancy_grids = np.zeros((self.fwd_tsteps+1, self.gridworld.S))
+			H_coords = self.real_to_sim_coord(self.prev_pos)
+			for T in range(self.fwd_tsteps + 1):
+				for i in range(H_coords[0] - T, H_coords[0] + T + 1):
+					for j in range(H_coords[1] - T, H_coords[1] + T + 1):
+						if 0 <= i < self.gridworld.rows and 0 <= j < self.gridworld.cols:
+							self.occupancy_grids[T, self.gridworld.coor_to_state(i,j)] = 1
 
-		# OPTION 2: The line below feeds in the last human (s,a) pair and previous posterior
-		# 			and does a recursive Bayesian update.
-		(self.occupancy_grids, self.beta_occu, self.dest_beta_prob) = inf.state.infer_joint(self.gridworld, 
-			dest_list, self.betas, T=self.fwd_tsteps, use_gridless=True, priors=self.dest_beta_prob,
-			traj=traj[-2:], epsilon_dest=self.epsilon_dest, epsilon_beta=self.epsilon_beta, verbose_return=True)
+		# METRICS
+		e = rospy.Time().now()
+		compute_time = (e-s).to_sec()
+		self.compute_metrics(compute_time)
 
 	# ---- Utility Functions ---- #
 
@@ -522,7 +602,8 @@ class HumanPrediction(object):
 
 			# Assert that all occupancies are in [0, 1].
 			assert self.occupancy_grids[t].max() <= 1.0 +1e-8 and self.occupancy_grids[t].min() >= 0.0 - 1e-8
-			assert abs(self.occupancy_grids[t].sum() - 1.0) < 1e-8
+			if self.model_type == "BOLTZMANN":
+				assert abs(self.occupancy_grids[t].sum() - 1.0) < 1e-8
 
 			# convert to list of doubles from 0-1
 			grid_msg.data = list(self.occupancy_grids[t])

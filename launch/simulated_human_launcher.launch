@@ -13,7 +13,7 @@
 	<param name="beta" value="$(arg beta)" />
 
 	<!-- Simulate human walking around. -->
-	<node name="simulate_human$(arg human_number)" pkg="crazyflie_human" type="potential_field_human.py" output="screen"/>
+	<node name="simulate_human$(arg human_number)" pkg="crazyflie_human" type="linear_human.py" output="screen"/>
 
 	<!-- Predict each human. -->
 	<node name="human_prediction$(arg human_number)" pkg="crazyflie_human" type="human_pred.py" output="screen"/> 
