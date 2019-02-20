@@ -50,13 +50,16 @@ pred:
 plan:
   # Model type -- can be 'FREESPACE', 'BOLTZMANN', 'FRT'
   model_list: ["BOLTZMANN"]
+  model_conservative: "FRT"
+  model_relaxed: "FREESPACE"
 
   # Save file
   metrics_file_name: "prediction_times"
-  time_step: 1.5
 
+  # How to plan -- can be "SWITCH", "FREESPACE", "FRT", "BOLTZMANN"
+  planning_mode: "BOLTZMANN"
   goal: [1.38, 1.75, 1.0]
-  max_runtime: 0.2
+  max_runtime: 0.3
 
 sim:
   # Specify the robot prefixes to listen to (obstacles)

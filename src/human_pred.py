@@ -119,11 +119,6 @@ class HumanPrediction(object):
 		# stores 2D array of size (fwd_tsteps) x (height x width) of probabilities
 		self.occupancy_grids = None
 
-		# model switching variables
-		self.model_type = None
-		self.model_list = rospy.get_param("plan/model_list")
-		self.time_step = rospy.get_param("plan/time_step")
-
 		# metrics file name
 		if rospy.has_param("plan/metrics_file_name"):
 			self.metrics_file_name = rospy.get_param("plan/metrics_file_name")
@@ -165,26 +160,30 @@ class HumanPrediction(object):
 
 		# Benchmarks: prediction compute time, trajectory time, distance to human
 		self.pred_compute_times = None
-		self.traj_time = None
-		self.dist_to_human = None
 
 		# robot variables
 		self.robot_prefix = rospy.get_param("sim/robot_prefix")
-		self.robot_traj_states = None
-		self.robot_traj_times = None
 		self.robot_goal = rospy.get_param("plan/goal")
 
-		# Planner
+		##### Planner parameters #####
+		self.waiting_for_plan = False
 		self.planner_runtime = rospy.get_param("plan/max_runtime")
-		self.relaxed_plan = None
-		self.complex_plan = None
-		self.conservative_plan = None
-		self.best_plan = None
-		self.current_plan = None
+		self.planner_mode = rospy.get_param("plan/planning_mode")
 
-		self.relaxed_length = None
-		self.conservative_length = None
-		self.complex_length = None
+		##### Model Switching #####
+		# model to switch between
+		self.model_list = rospy.get_param("plan/model_list")
+		self.model_conservative = rospy.get_param("plan/model_conservative")
+		self.model_relaxed = rospy.get_param("plan/model_relaxed")
+		self.current_model = None
+		self.best_model = None
+
+		# Plan dictionary mapping model type to a tuple of: 
+		# (occupancy grid, its resulting trajectory, trajectory length)
+		self.executed_plan = None
+		self.plans = {self.model_conservative:(None, None, None), self.model_relaxed:(None, None, None)}
+		for model in self.model_list:
+			self.plans[model] = (None, None, None)
 
 		# TODO This is for debugging.
 		print "----- Running prediction for one human : -----"
@@ -202,8 +201,6 @@ class HumanPrediction(object):
 		# subscribe to the info of the human walking around the space
 		self.human_sub = rospy.Subscriber('/human_pose'+self.human_number, PoseStamped, 
 											self.human_state_callback, queue_size=1)
-		self.traj_sub = rospy.Subscriber('/traj'+self.robot_prefix, Trajectory, 
-											self.trajectory_callback, queue_size=1)
 		self.robot_sub = rospy.Subscriber('/state/position_velocity_yaw'+self.robot_prefix,
 											PositionVelocityYawStateStamped,
 											self.robot_state_callback, queue_size=1)
@@ -211,7 +208,7 @@ class HumanPrediction(object):
 											self.environment_updated_callback, queue_size=1)
 		
 		# Timer. 
-		self.timer = rospy.Timer(rospy.Duration(self.time_step), self.timer_callback)
+		self.timer = rospy.Timer(rospy.Duration(self.planner_runtime), self.timer_callback)
 
 		# occupancy grid publisher & small publishers for visualizing the goals
 		self.occu_pub = rospy.Publisher('/occupancy_grid_time'+self.human_number, OccupancyGridTime, queue_size=1)
@@ -229,67 +226,71 @@ class HumanPrediction(object):
 
 	# Timer callback.
 	def timer_callback(self, event):
-		if self.prev_pos is None:
+		if self.prev_pos is None or self.waiting_for_plan:
 			return
 
-		# First compute the trajectory in freespace
-		self.model_type = "FREESPACE"
-		print "(start) MODEL: ", self.model_type
-		self.infer_occupancies() 
-		if self.occupancy_grids is not None:
-			self.occu_pub.publish(self.grid_to_message())
+		# 1. Clear the plans from the previous call
+		# 2. Initiate first element with the occupancy grid for each model.
+		# Assumption: prediction is fast, planning is slow.
+		# Given this assumption, predicting the occupancy grids in the beginning is cheap.
+		for key in self.plans.keys():
+			self.infer_occupancies(key)
+			self.plans[key] = (self.occupancy_grids, None, None)
+
+		if self.planner_mode == "SWITCH":
+			# First compute the relaxed trajectory
+			self.switch_model(self.model_relaxed)
+		else:
+			self.switch_model(self.planner_mode)
+		self.waiting_for_plan = True
 
 	def environment_updated_callback(self, msg):
+		curr_time = rospy.Time.now().to_sec()
+		if self.planner_mode == "SWITCH":
+			if self.current_model == self.model_relaxed:
+				# Make replan request
+				self.replan_trajectory(curr_time + 3*self.planner_runtime)
+				self.best_model = self.current_model
+
+				# Compute trajectory with conservative model and compare to relaxed model
+				self.switch_model(self.model_conservative)
+				return
+
+			elif self.current_model == self.model_conservative:
+				# Make replan request
+				self.replan_trajectory(curr_time + 2*self.planner_runtime)
+
+				# If conservative not good enough, compute trajectory with model_list
+				length1 = self.plans[self.model_relaxed][2]
+				length2 = self.plans[self.model_conservative][2]
+				if length1 is not float("inf") and length2 is not float("inf"):
+					print "freespace_length: ", length1, "; frt_length: ", length2
+					if abs(length1 - length2) > 0.5:
+						self.best_model = self.current_model
+						self.switch_model(self.model_list[0])
+						return
+
+			elif self.current_model == self.model_list[0]:
+				# Make replan request
+				self.replan_trajectory(curr_time + self.planner_runtime)
+
+				# If conservative not good enough, compute trajectory with model_list
+				length1 = self.plans[self.model_conservative][2]
+				length2 = self.plans[self.current_model][2]
+				if length1 is not float("inf") and length2 is not float("inf"):
+					print "boltzmann_length: ", length2, "; frt_length: ", length1
+					if abs(length1 - length2) > 0.5:
+						self.best_model = self.current_model
+		else:
+			self.replan_trajectory(curr_time + self.planner_runtime)
+			self.best_model = self.current_model
+
+		self.waiting_for_plan = False
+		self.executed_plan = self.plans[self.best_model][1]
+		self.traj_pub.publish(self.executed_plan)
+		print "EXECUTING plan for the best model: ", self.best_model
 		
-		if self.model_type == "FREESPACE":
-			# Make replan request message
-			self.relaxed_plan = self.replan_trajectory()
-			self.best_plan = self.relaxed_plan
-			self.relaxed_length = self.traj_length(self.relaxed_plan)
-			print "MODEL: ", self.model_type, "; TRAJ:", self.relaxed_plan
-			# Compute trajectory with FRT and compare to FREESPACE
-			self.model_type = "FRT"
-			self.infer_occupancies() 
-			if self.occupancy_grids is not None:
-				self.occu_pub.publish(self.grid_to_message())
-			return
-
-		elif self.model_type == "FRT":
-			# Make replan request message
-			self.conservative_plan = self.replan_trajectory()
-			self.conservative_length = self.traj_length(self.conservative_plan)
-			print "MODEL: ", self.model_type, "; TRAJ:", self.conservative_plan
-			# If FRT not good enough, compute trajectory with model_list
-			if self.relaxed_length is not float("inf") and self.conservative_length is not float("inf"):
-				print "freespace_length: ", self.relaxed_length, "; frt_length: ", self.conservative_length
-				if abs(self.relaxed_length - self.conservative_length) > 0.5:
-					self.best_plan = self.conservative_plan
-					self.model_type = self.model_list[0]
-					self.infer_occupancies() 
-					if self.occupancy_grids is not None:
-						self.occu_pub.publish(self.grid_to_message())
-					return
-
-			# If here, conservative plan was not better than relaxed
-			self.model_type = "FREESPACE"
-			self.infer_occupancies()
-		
-		elif self.model_type == "BOLTZMANN":
-			# Make replan request message
-			self.complex_plan = self.replan_trajectory()
-			self.complex_length = self.traj_length(self.complex_plan)
-			print "MODEL: ", self.model_type, "; TRAJ:", self.complex_plan
-			# If FRT not good enough, compute trajectory with model_list
-			if self.complex_length is not float("inf") and self.conservative_length is not float("inf"):
-				print "boltzmann_length: ", self.complex_length, "; frt_length: ", self.conservative_length
-				if abs(self.complex_length - self.conservative_length) > 0.5:
-					self.best_plan = self.complex_plan
-			else:
-				self.model_type = "FRT"
-				self.infer_occupancies()
-
-		self.traj_pub.publish(self.best_plan)
-		self.current_plan = self.best_plan
+		self.infer_occupancies(self.best_model)
 		if self.occupancy_grids is not None:
 			self.visualize_occugrid(2)
 
@@ -327,42 +328,50 @@ class HumanPrediction(object):
 	def robot_state_callback(self, msg):
 	    self.robot_pos = [msg.state.x, msg.state.y, msg.state.z]
 
-	def trajectory_callback(self, msg):
-		"""
-		Grabs the most recent trajectory and compute metrics
-		"""
-		self.robot_traj_states = msg.states
-		self.robot_traj_times = msg.times
+ 	# ---- Helper functions ---- #
 
- 	# Distance between human and robot.
 	def HR_distance(self):
+		# Function that computes the distance between the robot and the human in the xy plane.
 		if self.prev_pos is None or self.robot_pos is None:
 			return float("inf")
 		return np.linalg.norm(np.array(self.prev_pos) - np.array(self.robot_pos[:2]))
 
 	def traj_length(self, traj):
+		# Function that computes the legth of a given trajectory traj.
 		if traj is None:
 			return float("inf")
 		return sum([np.linalg.norm(np.array(traj.states[i+1].x[:2]) - np.array(s.x[:2])) for i, s in enumerate(traj.states[:-1])])
 
-	def replan_trajectory(self):
-		curr_time = rospy.Time.now().to_sec()
-		replan_request = ReplanRequest(State(self.robot_pos), State(self.robot_goal), curr_time + self.planner_runtime)
+	def switch_model(self, model):
+		# Function that enacts model switching and 
+		# sends signal to update the environment with the new occupancy grid.
+		print "(switch) MODEL: ", model
+		self.current_model = model
+		self.occupancy_grids = self.plans[self.current_model][0] 
+		if self.occupancy_grids is not None:
+			self.occu_pub.publish(self.grid_to_message())
+
+	def replan_trajectory(self, start_time):
+		# Function to send a replan signal to the planner.
+		replan_request = ReplanRequest(State(self.robot_pos), State(self.robot_goal), start_time)
 		
 		# Reset start state for future state if we have a current trajectory.
-		if self.current_plan is not None:
+		if self.executed_plan is not None:
 			replan_request.start = State(self.interpolate(replan_request.start_time))
 
 		try:
-			return self.replan_srv(replan_request).traj
+			plan =  self.replan_srv(replan_request).traj
+			print "MODEL: ", self.current_model, "; TRAJ:", plan
 		except rospy.ServiceException, e:
 			print "Service call failed: %s"%e
-		return None
+			plan = None
+		self.plans[self.current_model] = (self.plans[self.current_model][0], plan, self.traj_length(plan))
+		return
 
 	def interpolate(self, t):
-		# Interpolate at a particular time.
-		times = self.current_plan.times
-		states = self.current_plan.states
+		# Linearly interpolate at a particular time t.
+		times = self.executed_plan.times
+		states = self.executed_plan.states
 
 		if t < times[0]:
 			return states[0].x[:3]
@@ -384,15 +393,15 @@ class HumanPrediction(object):
 			self.pred_compute_times = [compute_time]
 		else:
 			self.pred_compute_times.append(compute_time)
-		if self.robot_traj_times is not None:
-			self.traj_time = (self.robot_traj_times[-1] - self.robot_traj_times[0])
-		self.dist_to_human = self.HR_distance()
+		if self.best_plan.times is not None:
+			traj_time = (self.best_plan.times[-1] - self.best_plan.times[0])
+		dist_to_human = self.HR_distance()
 		
 		average_compute_time = sum(self.pred_compute_times)/len(self.pred_compute_times)
 
 		print "Human ", self.human_number, ", Model: ",self.model_type, ", Avg Compute Time: ", average_compute_time
-		print "Human  ", self.human_number, ", Model: ",self.model_type, ", Distance from Robot: ", self.dist_to_human
-		print "Human ", self.human_number, ", Model: ",self.model_type, ", Replanned Trajectory Time: ", self.traj_time, "\n"		
+		print "Human  ", self.human_number, ", Model: ",self.model_type, ", Distance from Robot: ", dist_to_human
+		print "Human ", self.human_number, ", Model: ",self.model_type, ", Replanned Trajectory Time: ", traj_time, "\n"		
 
 	def make_valid_state(self, xypose):
 		"""
@@ -427,8 +436,7 @@ class HumanPrediction(object):
 			#if not in_same_state:
 			self.sim_human_traj = np.append(self.sim_human_traj, np.array([sim_newstate]), 0)
 
-
-	def infer_occupancies(self):
+	def infer_occupancies(self, model):
 		"""
 		Using the current trajectory data, recompute a new occupancy grid
 		for where the human might be.
@@ -447,14 +455,14 @@ class HumanPrediction(object):
 		# Convert the human trajectory points from real-world to 2D grid values. 
 		traj = [self.real_to_sim_coord(x, round_vals=True) for x in self.real_human_traj] 
   
-  		if self.model_type == "BOLTZMANN":
+  		if model == "BOLTZMANN":
 			(self.occupancy_grids, self.beta_occu, self.dest_beta_prob) = inf.state.infer_joint(self.gridworld, 
 				dest_list, self.betas, T=self.fwd_tsteps, use_gridless=True, priors=self.dest_beta_prob,
 				traj=traj[-2:], epsilon_dest=self.epsilon_dest, epsilon_beta=self.epsilon_beta, verbose_return=True)
-		elif self.model_type == "FREESPACE":
+		elif model == "FREESPACE":
 			# We are planning in free space, so the grid is empty everywhere
 			self.occupancy_grids = np.zeros((self.fwd_tsteps+1, self.gridworld.S))
-		elif self.model_type == "FRT":
+		elif model == "FRT":
 			# Planning with Forward reachable sets.
 			# Get all humans, draw a circle of radius T around them, occupy the grid around there
 			self.occupancy_grids = np.zeros((self.fwd_tsteps+1, self.gridworld.S))
@@ -690,8 +698,6 @@ class HumanPrediction(object):
 
 			# Assert that all occupancies are in [0, 1].
 			assert self.occupancy_grids[t].max() <= 1.0 +1e-8 and self.occupancy_grids[t].min() >= 0.0 - 1e-8
-			if self.model_type == "BOLTZMANN":
-				assert abs(self.occupancy_grids[t].sum() - 1.0) < 1e-8
 
 			# convert to list of doubles from 0-1
 			grid_msg.data = list(self.occupancy_grids[t])
