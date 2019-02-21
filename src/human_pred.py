@@ -116,9 +116,6 @@ class HumanPrediction(object):
 		self.epsilon_dest = rospy.get_param("pred/epsilon_dest")
 		self.epsilon_beta = rospy.get_param("pred/epsilon_beta")
 
-		# stores 2D array of size (fwd_tsteps) x (height x width) of probabilities
-		self.occupancy_grids = None
-
 		# metrics file name
 		if rospy.has_param("plan/metrics_file_name"):
 			self.metrics_file_name = rospy.get_param("plan/metrics_file_name")
@@ -177,6 +174,7 @@ class HumanPrediction(object):
 		self.model_relaxed = rospy.get_param("plan/model_relaxed")
 		self.current_model = None
 		self.best_model = None
+		self.executed_model = None
 
 		# Plan dictionary mapping model type to a tuple of: 
 		# (occupancy grid, its resulting trajectory, trajectory length)
@@ -234,8 +232,7 @@ class HumanPrediction(object):
 		# Assumption: prediction is fast, planning is slow.
 		# Given this assumption, predicting the occupancy grids in the beginning is cheap.
 		for key in self.plans.keys():
-			self.infer_occupancies(key)
-			self.plans[key] = (self.occupancy_grids, None, None)
+			self.plans[key] = (self.infer_occupancies(key), None, None)
 
 		if self.planner_mode == "SWITCH":
 			# First compute the relaxed trajectory
@@ -286,13 +283,13 @@ class HumanPrediction(object):
 			self.best_model = self.current_model
 
 		self.waiting_for_plan = False
+		self.executed_model = self.best_model
 		self.executed_plan = self.plans[self.best_model][1]
 		self.traj_pub.publish(self.executed_plan)
-		print "EXECUTING plan for the best model: ", self.best_model
+		print "EXECUTING plan for the best model: ", self.executed_model
 		
-		self.infer_occupancies(self.best_model)
-		if self.occupancy_grids is not None:
-			self.visualize_occugrid(2)
+		if not self.executed_model == self.model_list[0]:
+			self.dest_beta_prob = None
 
 	def human_state_callback(self, msg):
 		"""
@@ -323,7 +320,8 @@ class HumanPrediction(object):
 				self.human_vel = np.linalg.norm((np.array(xypose) - np.array(self.prev_pos)))/time_diff
 				self.deltat = np.minimum(np.maximum(self.res_x/self.human_vel,0.05),0.2)
 
-			self.prev_pos = xypose	
+			self.prev_pos = xypose
+			self.visualize_occugrid(self.infer_occupancies(self.executed_model), 2)
 
 	def robot_state_callback(self, msg):
 	    self.robot_pos = [msg.state.x, msg.state.y, msg.state.z]
@@ -347,9 +345,9 @@ class HumanPrediction(object):
 		# sends signal to update the environment with the new occupancy grid.
 		print "(switch) MODEL: ", model
 		self.current_model = model
-		self.occupancy_grids = self.plans[self.current_model][0] 
-		if self.occupancy_grids is not None:
-			self.occu_pub.publish(self.grid_to_message())
+		occupancy_grids = self.plans[self.current_model][0] 
+		if occupancy_grids is not None:
+			self.occu_pub.publish(self.grid_to_message(occupancy_grids))
 
 	def replan_trajectory(self, start_time):
 		# Function to send a replan signal to the planner.
@@ -454,29 +452,29 @@ class HumanPrediction(object):
 
 		# Convert the human trajectory points from real-world to 2D grid values. 
 		traj = [self.real_to_sim_coord(x, round_vals=True) for x in self.real_human_traj] 
-  
-  		if model == "BOLTZMANN":
-			(self.occupancy_grids, self.beta_occu, self.dest_beta_prob) = inf.state.infer_joint(self.gridworld, 
+
+		# By default, return an empty grid if it's the FREESPACE model, or no model
+		occupancy_grids = np.zeros((self.fwd_tsteps+1, self.gridworld.S))
+
+		if model == "BOLTZMANN":
+			(occupancy_grids, self.beta_occu, self.dest_beta_prob) = inf.state.infer_joint(self.gridworld, 
 				dest_list, self.betas, T=self.fwd_tsteps, use_gridless=True, priors=self.dest_beta_prob,
 				traj=traj[-2:], epsilon_dest=self.epsilon_dest, epsilon_beta=self.epsilon_beta, verbose_return=True)
-		elif model == "FREESPACE":
-			# We are planning in free space, so the grid is empty everywhere
-			self.occupancy_grids = np.zeros((self.fwd_tsteps+1, self.gridworld.S))
 		elif model == "FRT":
 			# Planning with Forward reachable sets.
 			# Get all humans, draw a circle of radius T around them, occupy the grid around there
-			self.occupancy_grids = np.zeros((self.fwd_tsteps+1, self.gridworld.S))
 			H_coords = self.real_to_sim_coord(self.prev_pos)
 			for T in range(self.fwd_tsteps + 1):
 				for i in range(H_coords[0] - T, H_coords[0] + T + 1):
 					for j in range(H_coords[1] - T, H_coords[1] + T + 1):
 						if 0 <= i < self.gridworld.rows and 0 <= j < self.gridworld.cols:
-							self.occupancy_grids[T, self.gridworld.coor_to_state(i,j)] = 1
+							occupancy_grids[T, self.gridworld.coor_to_state(i,j)] = 1
 
 		# METRICS
 		e = rospy.Time().now()
 		compute_time = (e-s).to_sec()
 		#self.compute_metrics(compute_time)
+		return occupancy_grids
 
 	# ---- Utility Functions ---- #
 
@@ -571,11 +569,11 @@ class HumanPrediction(object):
 		else:
 			return [i_coord, j_coord]
 
-	def interpolate_grid(self, future_time):
+	def interpolate_grid(self, occupancy_grids, future_time):
 		"""
 		Interpolates the grid at some future time
 		"""
-		if self.occupancy_grids is None:
+		if occupancy_grids is None:
 			print "Occupancy grids are not created yet!"
 			return None
 
@@ -596,13 +594,13 @@ class HumanPrediction(object):
 	
 		if in_idx != -1:
 			# if interpolating exactly at the timestep
-			return self.occupancy_grids[in_idx]
+			return occupancy_grids[in_idx]
 		else:
 			prev_t = int(future_time)
 			next_t = int(future_time)+1
 
-			low_grid = self.occupancy_grids[prev_t]
-			high_grid = self.occupancy_grids[next_t]
+			low_grid = occupancy_grids[prev_t]
+			high_grid = occupancy_grids[next_t]
 
 			interpolated_grid = np.zeros((self.sim_height*self.sim_width))
 
@@ -616,7 +614,7 @@ class HumanPrediction(object):
 
 	# ---- Visualization ---- #
 
-	def visualize_occugrid(self, time):
+	def visualize_occugrid(self, occupancy_grids, time):
 		"""
 		Visualizes occupancy grid for all grids in time
 		"""
@@ -625,7 +623,7 @@ class HumanPrediction(object):
 			rospy.loginfo_throttle(1.0, "visualize_occugrid: I'm lonely.")
 			return
 
-		if self.occupancy_grids is not None:
+		if occupancy_grids is not None:
 			marker = Marker()
 			marker.header.frame_id = "/world"
 			marker.header.stamp = rospy.Time.now()
@@ -639,8 +637,8 @@ class HumanPrediction(object):
 			marker.scale.y = self.res_y
 			marker.scale.z = self.human_height
 			for t in range(time):
-				#grid = self.interpolate_grid(t)
-				grid = self.occupancy_grids[t]
+				#grid = self.interpolate_grid(occupancy_grids, t)
+				grid = occupancy_grids[t]
 				if grid is not None:
 					for i in range(len(grid)):
 						(row, col) = self.gridworld.state_to_coor(i)
@@ -665,7 +663,7 @@ class HumanPrediction(object):
 			
 	# ---- ROS Message Conversion ---- #
 
-	def grid_to_message(self):
+	def grid_to_message(self, occupancy_grids):
 		"""
 		Converts OccupancyGridTime structure to ROS msg
 		"""
@@ -697,10 +695,10 @@ class HumanPrediction(object):
 			grid_msg.origin = Pose(Point(origin_x, origin_y, 0), Quaternion(0, 0, 0, 1))
 
 			# Assert that all occupancies are in [0, 1].
-			assert self.occupancy_grids[t].max() <= 1.0 +1e-8 and self.occupancy_grids[t].min() >= 0.0 - 1e-8
+			assert occupancy_grids[t].max() <= 1.0 +1e-8 and occupancy_grids[t].min() >= 0.0 - 1e-8
 
 			# convert to list of doubles from 0-1
-			grid_msg.data = list(self.occupancy_grids[t])
+			grid_msg.data = list(occupancy_grids[t])
 
 			timed_grid.gridarray[t] = grid_msg
  

@@ -57,9 +57,9 @@ plan:
   metrics_file_name: "prediction_times"
 
   # How to plan -- can be "SWITCH", "FREESPACE", "FRT", "BOLTZMANN"
-  planning_mode: "BOLTZMANN"
+  planning_mode: "SWITCH"
   goal: [1.38, 1.75, 1.0]
-  max_runtime: 0.3
+  max_runtime: 0.2
 
 sim:
   # Specify the robot prefixes to listen to (obstacles)
