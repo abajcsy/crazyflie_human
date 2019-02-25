@@ -66,7 +66,7 @@ class HumanPrediction(object):
 		if hasattr(self, "metrics_file_name"):
 			rospack = rospkg.RosPack()
 	        path = rospack.get_path('data_logger') + "/data/"
-	        pickle.dump(self.pred_compute_times, open(path + self.metrics_file_name + ".py", "wb"))
+	        pickle.dump((self.prediction_time, self.planning_time, self.dist_to_human, self.total_time), open(path + self.metrics_file_name + ".py", "wb"))
 
 
 	def load_parameters(self):
@@ -155,9 +155,6 @@ class HumanPrediction(object):
 		# compute the timestep (seconds/cell)
 		self.deltat = self.res_x/self.human_vel
 
-		# Benchmarks: prediction compute time, trajectory time, distance to human
-		self.pred_compute_times = None
-
 		# robot variables
 		self.robot_prefix = rospy.get_param("sim/robot_prefix")
 		self.robot_goal = rospy.get_param("plan/goal")
@@ -176,12 +173,21 @@ class HumanPrediction(object):
 		self.best_model = None
 		self.executed_model = None
 
+		# Benchmarks: prediction compute time, planning compute time, trajectory time, distance to human
+		self.dist_to_human = []
+		self.start_time = rospy.Time.now()
+		self.total_time = None
+		self.planning_time = {self.model_conservative: [], self.model_relaxed: []}
+		self.prediction_time = {self.model_conservative: [], self.model_relaxed: []}
+
 		# Plan dictionary mapping model type to a tuple of: 
 		# (occupancy grid, its resulting trajectory, trajectory length)
 		self.executed_plan = None
 		self.plans = {self.model_conservative:(None, None, None), self.model_relaxed:(None, None, None)}
 		for model in self.model_list:
 			self.plans[model] = (None, None, None)
+			self.planning_time[model] = []
+			self.prediction_time[model] = []
 
 		# TODO This is for debugging.
 		print "----- Running prediction for one human : -----"
@@ -232,7 +238,16 @@ class HumanPrediction(object):
 		# Assumption: prediction is fast, planning is slow.
 		# Given this assumption, predicting the occupancy grids in the beginning is cheap.
 		for key in self.plans.keys():
+			# METRICS
+			s = rospy.Time().now()
+			
 			self.plans[key] = (self.infer_occupancies(key), None, None)
+			
+			# METRICS
+			e = rospy.Time().now()
+			prediction_time = (e-s).to_sec()
+			self.prediction_time[key].append(prediction_time)
+			print "MODEL: ", key, "; PREDICTION TIME: ", prediction_time
 
 		if self.planner_mode == "SWITCH":
 			# First compute the relaxed trajectory
@@ -246,6 +261,7 @@ class HumanPrediction(object):
 		if self.planner_mode == "SWITCH":
 			if self.current_model == self.model_relaxed:
 				# Make replan request
+
 				self.replan_trajectory(curr_time + 3*self.planner_runtime)
 				self.best_model = self.current_model
 
@@ -323,6 +339,12 @@ class HumanPrediction(object):
 			self.prev_pos = xypose
 			self.visualize_occugrid(self.infer_occupancies(self.executed_model), 2)
 
+			# METRICS
+			self.dist_to_human.append(self.HR_distance())
+			if self.total_time is None and np.linalg.norm(np.array(self.robot_pos) - np.array(self.robot_goal)) < 5e-2:
+				right_now = rospy.Time.now()
+				self.total_time = right_now - self.start_time
+
 	def robot_state_callback(self, msg):
 	    self.robot_pos = [msg.state.x, msg.state.y, msg.state.z]
 
@@ -357,12 +379,21 @@ class HumanPrediction(object):
 		if self.executed_plan is not None:
 			replan_request.start = State(self.interpolate(replan_request.start_time))
 
+		# METRICS
+		s = rospy.Time().now()
+
 		try:
 			plan =  self.replan_srv(replan_request).traj
 			print "MODEL: ", self.current_model, "; TRAJ:", plan
 		except rospy.ServiceException, e:
 			print "Service call failed: %s"%e
 			plan = None
+		
+		# METRICS
+		e = rospy.Time().now()
+		planning_time = (e-s).to_sec()
+		self.planning_time[self.current_model].append(planning_time)
+		print "MODEL: ", self.current_model, "; PLANNING TIME: ", planning_time
 		self.plans[self.current_model] = (self.plans[self.current_model][0], plan, self.traj_length(plan))
 		return
 
@@ -385,21 +416,6 @@ class HumanPrediction(object):
 		frac = (t - times[lo]) / (times[hi] - times[lo])
 		interpolated = (1.0 - frac) * np.array(states[lo].x[:3]) + frac * np.array(states[hi].x[:3])
 		return interpolated
-
-	def compute_metrics(self, compute_time):
-		if self.pred_compute_times is None:
-			self.pred_compute_times = [compute_time]
-		else:
-			self.pred_compute_times.append(compute_time)
-		if self.best_plan.times is not None:
-			traj_time = (self.best_plan.times[-1] - self.best_plan.times[0])
-		dist_to_human = self.HR_distance()
-		
-		average_compute_time = sum(self.pred_compute_times)/len(self.pred_compute_times)
-
-		print "Human ", self.human_number, ", Model: ",self.model_type, ", Avg Compute Time: ", average_compute_time
-		print "Human  ", self.human_number, ", Model: ",self.model_type, ", Distance from Robot: ", dist_to_human
-		print "Human ", self.human_number, ", Model: ",self.model_type, ", Replanned Trajectory Time: ", traj_time, "\n"		
 
 	def make_valid_state(self, xypose):
 		"""
@@ -440,9 +456,6 @@ class HumanPrediction(object):
 		for where the human might be.
 		"""
 
-		# METRICS
-		s = rospy.Time().now()
-
 		if self.real_human_traj is None or self.sim_human_traj is None:
 			print "Can't infer occupancies -- human hasn't appeared yet!"
 			return 
@@ -470,10 +483,6 @@ class HumanPrediction(object):
 						if 0 <= i < self.gridworld.rows and 0 <= j < self.gridworld.cols:
 							occupancy_grids[T, self.gridworld.coor_to_state(i,j)] = 1
 
-		# METRICS
-		e = rospy.Time().now()
-		compute_time = (e-s).to_sec()
-		#self.compute_metrics(compute_time)
 		return occupancy_grids
 
 	# ---- Utility Functions ---- #
